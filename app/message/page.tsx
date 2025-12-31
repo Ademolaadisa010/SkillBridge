@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import ClientSidebar from "@/components/sidebar/ClientSidebar";
 import { db, auth } from "@/lib/firebase";
 import { 
@@ -32,7 +32,8 @@ interface Message {
   createdAt: Timestamp;
 }
 
-export default function MessagePage() {
+// 1. Separate the chat logic into a internal component
+function MessageContent() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -45,7 +46,7 @@ export default function MessagePage() {
   // Get active chatId from URL
   const activeChatId = searchParams.get("chatId") || "";
 
-  // 1. Handle Auth State
+  // Handle Auth State
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -53,11 +54,10 @@ export default function MessagePage() {
     return () => unsub();
   }, []);
 
-  // 2. Listen for Chat List (Sidebar)
+  // Listen for Chat List (Sidebar)
   useEffect(() => {
     if (!currentUser) return;
 
-    // Filter by participants to avoid "Insufficient Permissions"
     const q = query(
       collection(db, "chats"),
       where("participants", "array-contains", currentUser.uid)
@@ -68,7 +68,6 @@ export default function MessagePage() {
         const data = docSnap.data();
         return {
           id: docSnap.id,
-          // For client, the 'name' might be the worker's name saved in the doc
           name: data.workerName || data.name || "Worker", 
           lastMsg: data.lastMsg || "",
           time: data.time?.toDate 
@@ -83,7 +82,7 @@ export default function MessagePage() {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // 3. Listen for Messages in Active Chat
+  // Listen for Messages in Active Chat
   useEffect(() => {
     if (!activeChatId || !currentUser) return;
 
@@ -227,5 +226,18 @@ export default function MessagePage() {
         )}
       </div>
     </div>
+  );
+}
+
+// 2. Main Page component that wraps everything in Suspense
+export default function MessagePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-gray-500 animate-pulse">Loading Messages...</div>
+      </div>
+    }>
+      <MessageContent />
+    </Suspense>
   );
 }
