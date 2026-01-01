@@ -10,27 +10,23 @@ import { auth, db } from "@/lib/firebase";
 export default function Login() {
   const router = useRouter();
 
-  // 🔐 Backend state
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 🚀 Login logic
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // ⚠️ Firebase Auth supports EMAIL login by default
       const cred = await signInWithEmailAndPassword(
         auth,
         emailOrPhone,
         password
       );
 
-      // 1️⃣ Fetch user role from Firestore
       const snap = await getDoc(doc(db, "users", cred.user.uid));
 
       if (!snap.exists()) {
@@ -39,12 +35,15 @@ export default function Login() {
 
       const role = snap.data().role;
 
-      // 2️⃣ Redirect by role
-      router.push(
-        role === "client"
-          ? "/client/dashboard"
-          : "/worker/dashboard"
-      );
+      if (role === "admin") {
+        router.push("/admin");
+      } else if (role === "client") {
+        router.push("/client/dashboard");
+      } else if (role === "worker") {
+        router.push("/worker/dashboard");
+      } else {
+        throw new Error("Invalid user role");
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -100,12 +99,12 @@ export default function Login() {
                 <input type="checkbox" className="w-4 h-4 text-[#FF6B35]" />
                 <span className="text-gray-600">Remember me</span>
               </label>
-              <a
-                href="#forgot"
+              <Link
+                href="/forgot-password"
                 className="text-[#FF6B35] font-semibold hover:underline"
               >
                 Forgot Password?
-              </a>
+              </Link>
             </div>
 
             {error && (
