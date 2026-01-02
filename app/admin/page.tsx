@@ -1,65 +1,146 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { 
+  collection, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc,
+  query,
+  orderBy,
+  Timestamp 
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   role: "client" | "worker";
   verified?: boolean;
   skill?: string;
-  dateAdded?: string;
+  dateAdded: string;
+  createdAt?: any;
 }
 
 export default function Admin() {
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: "Alex Thompson", role: "client", dateAdded: "2024-01-15" },
-    { id: 2, name: "Kwame Mensah", role: "worker", verified: false, skill: "Plumber", dateAdded: "2024-02-20" },
-    { id: 3, name: "Amara Nkosi", role: "worker", verified: true, skill: "Electrician", dateAdded: "2024-01-10" },
-    { id: 4, name: "Chidi Okafor", role: "worker", verified: false, skill: "Carpenter", dateAdded: "2024-03-05" },
-  ]);
-
+  const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newWorker, setNewWorker] = useState({ name: "", skill: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const workers = users.filter((u) => u.role === "worker");
   const clients = users.filter((u) => u.role === "client");
   const pendingWorkers = workers.filter((w) => !w.verified);
 
-  const verifyWorker = (id: number) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, verified: true } : user
-      )
-    );
-    showNotification("Worker verified successfully!");
+  // Load users from Firebase on mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const usersCollection = collection(db, "users");
+      const q = query(usersCollection, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      
+      const fetchedUsers: User[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        // Only add users with valid name
+        if (data.name) {
+          fetchedUsers.push({
+            id: doc.id,
+            name: data.name || "Unknown",
+            role: data.role || "client",
+            verified: data.verified || false,
+            skill: data.skill || "",
+            dateAdded: data.dateAdded || new Date().toISOString().split("T")[0],
+            createdAt: data.createdAt,
+          });
+        }
+      });
+      
+      setUsers(fetchedUsers);
+    } catch (err) {
+      console.error("Error loading users:", err);
+      setError("Failed to load users from Firebase");
+      showNotification("Failed to load data", "error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const addWorker = () => {
+  const verifyWorker = async (id: string) => {
+    try {
+      const userRef = doc(db, "users", id);
+      await updateDoc(userRef, {
+        verified: true,
+      });
+      
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === id ? { ...user, verified: true } : user
+        )
+      );
+      showNotification("Worker verified successfully!");
+    } catch (err) {
+      console.error("Error verifying worker:", err);
+      showNotification("Failed to verify worker", "error");
+    }
+  };
+
+  const addWorker = async () => {
     if (!newWorker.name.trim() || !newWorker.skill.trim()) {
       showNotification("Please fill in all fields", "error");
       return;
     }
 
-    const worker: User = {
-      id: users.length + 1,
-      name: newWorker.name,
-      role: "worker",
-      verified: false,
-      skill: newWorker.skill,
-      dateAdded: new Date().toISOString().split("T")[0],
-    };
+    try {
+      const newWorkerData = {
+        name: newWorker.name.trim(),
+        role: "worker",
+        verified: false,
+        skill: newWorker.skill.trim(),
+        dateAdded: new Date().toISOString().split("T")[0],
+        createdAt: Timestamp.now(),
+      };
 
-    setUsers((prev) => [...prev, worker]);
-    setNewWorker({ name: "", skill: "" });
-    showNotification("Worker added successfully!");
+      const docRef = await addDoc(collection(db, "users"), newWorkerData);
+      
+      const addedWorker: User = {
+        id: docRef.id,
+        ...newWorkerData,
+      };
+
+      setUsers((prev) => [addedWorker, ...prev]);
+      setNewWorker({ name: "", skill: "" });
+      showNotification("Worker added successfully!");
+    } catch (err) {
+      console.error("Error adding worker:", err);
+      showNotification("Failed to add worker", "error");
+    }
   };
 
-  const deleteUser = (id: number) => {
-    setUsers((prev) => prev.filter((user) => user.id !== id));
-    showNotification("User deleted successfully!");
+  const deleteUser = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) {
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, "users", id));
+      setUsers((prev) => prev.filter((user) => user.id !== id));
+      showNotification("User deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      showNotification("Failed to delete user", "error");
+    }
   };
 
   const showNotification = (message: string, type: "success" | "error" = "success") => {
@@ -68,15 +149,42 @@ export default function Admin() {
   };
 
   const filteredUsers = users.filter((user) =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in">
+        <div className={`fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+          notification.includes("Failed") || notification.includes("error") 
+            ? "bg-red-600" 
+            : "bg-green-600"
+        } text-white`}>
           {notification}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6B35] mx-auto mb-4"></div>
+            <p className="text-gray-700">Loading data from Firebase...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="fixed top-20 right-4 bg-red-100 border border-red-400 text-red-700 px-6 py-3 rounded-lg shadow-lg z-50">
+          {error}
+          <button 
+            onClick={() => setError(null)}
+            className="ml-4 text-red-900 font-bold"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -112,6 +220,15 @@ export default function Admin() {
 
         <div className="mt-auto pt-6 border-t border-gray-600">
           <p className="text-xs text-gray-400">Logged in as Admin</p>
+          <button
+            onClick={() => {
+              loadUsers();
+              showNotification("Data refreshed from Firebase");
+            }}
+            className="mt-3 text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            🔄 Refresh Data
+          </button>
         </div>
       </aside>
 
@@ -143,7 +260,7 @@ export default function Admin() {
               <section className="bg-white rounded-xl p-6 shadow-sm border">
                 <h3 className="text-lg font-bold mb-4 text-gray-800">Recent Activity</h3>
                 <div className="space-y-3">
-                  {users.slice(-3).reverse().map((user) => (
+                  {users.slice(0, 5).map((user) => (
                     <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
                         <p className="font-medium text-gray-800">{user.name}</p>
@@ -162,6 +279,9 @@ export default function Admin() {
                       </span>
                     </div>
                   ))}
+                  {users.length === 0 && (
+                    <p className="text-gray-500 text-center py-4">No users yet</p>
+                  )}
                 </div>
               </section>
 
