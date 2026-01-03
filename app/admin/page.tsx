@@ -502,8 +502,215 @@ export default function Admin() {
           </>
         )}
 
-        {/* Rest of the tabs... (users, verification, add-worker, settings) - same as before */}
-        {/* I'll add them in the next message if needed */}
+        {activeTab === "users" && (
+          <section className="bg-white rounded-xl p-6 shadow-sm border">
+            <div className="mb-6">
+              <input
+                type="text"
+                placeholder="Search users by name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full max-w-md border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+              />
+            </div>
+
+            {filteredUsers.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No users found.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-600 border-b-2 border-gray-200">
+                      <th className="py-3 px-4 font-semibold">Name</th>
+                      <th className="py-3 px-4 font-semibold">Role</th>
+                      <th className="py-3 px-4 font-semibold">Skill/Type</th>
+                      <th className="py-3 px-4 font-semibold">Status</th>
+                      <th className="py-3 px-4 font-semibold">Date Added</th>
+                      <th className="py-3 px-4 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-4 px-4 font-medium text-gray-800">{user.name}</td>
+                        <td className="py-4 px-4 capitalize">{user.role}</td>
+                        <td className="py-4 px-4">{user.skill || "N/A"}</td>
+                        <td className="py-4 px-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            user.role === "client" 
+                              ? "bg-blue-100 text-blue-700"
+                              : user.verified 
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {user.role === "client" ? "Active" : user.verified ? "Verified" : "Pending"}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-gray-600">{user.dateAdded}</td>
+                        <td className="py-4 px-4">
+                          <button
+                            onClick={() => deleteUser(user.id)}
+                            className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-600 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* WORKER VERIFICATION TAB */}
+        {activeTab === "verification" && (
+          <section className="bg-white rounded-xl p-6 shadow-sm border">
+            <p className="text-gray-600 mb-6">Review and approve worker verification requests.</p>
+
+            {pendingWorkers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">✅</div>
+                <p className="text-gray-500 text-lg">No pending verification requests.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-600 border-b-2 border-gray-200">
+                      <th className="py-3 px-4 font-semibold">Name</th>
+                      <th className="py-3 px-4 font-semibold">Skill</th>
+                      <th className="py-3 px-4 font-semibold">Date Added</th>
+                      <th className="py-3 px-4 font-semibold">Status</th>
+                      <th className="py-3 px-4 font-semibold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingWorkers.map((worker) => (
+                      <tr key={worker.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-4 px-4 font-medium text-gray-800">{worker.name}</td>
+                        <td className="py-4 px-4">{worker.skill}</td>
+                        <td className="py-4 px-4 text-gray-600">{worker.dateAdded}</td>
+                        <td className="py-4 px-4">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                            Pending Review
+                          </span>
+                        </td>
+                        <td className="py-4 px-4">
+                          <button
+                            onClick={() => verifyWorker(worker.id)}
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg text-xs hover:bg-green-700 transition-colors font-medium"
+                          >
+                            ✓ Verify Worker
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ADD WORKER TAB */}
+        {activeTab === "add-worker" && (
+          <section className="bg-white rounded-xl p-6 shadow-sm border max-w-2xl">
+            <p className="text-gray-600 mb-6">Add a new worker to the platform. They will need verification before becoming active.</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter worker's full name"
+                  value={newWorker.name}
+                  onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Skill/Profession *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Electrician, Plumber, Carpenter"
+                  value={newWorker.skill}
+                  onChange={(e) => setNewWorker({ ...newWorker, skill: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  placeholder="worker@example.com"
+                  value={newWorker.email}
+                  onChange={(e) => setNewWorker({ ...newWorker, email: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                />
+              </div>
+
+              <button
+                onClick={addWorker}
+                className="w-full bg-[#FF6B35] text-white rounded-lg px-6 py-3 font-medium hover:bg-[#e5612f] transition-colors"
+              >
+                ➕ Add Worker
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* SETTINGS TAB */}
+        {activeTab === "settings" && (
+          <section className="bg-white rounded-xl p-6 shadow-sm border max-w-2xl">
+            <div className="space-y-6">
+              <div className="pb-6 border-b">
+                <h3 className="text-lg font-semibold mb-2">Account Settings</h3>
+                <p className="text-gray-600 text-sm">Manage your admin account preferences</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="font-medium">Email Notifications</p>
+                    <p className="text-sm text-gray-600">Receive updates about new verifications</p>
+                  </div>
+                  <button className="bg-gray-200 rounded-full w-12 h-6 relative">
+                    <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="font-medium">Auto-approve Workers</p>
+                    <p className="text-sm text-gray-600">Automatically verify workers with complete profiles</p>
+                  </div>
+                  <button className="bg-gray-200 rounded-full w-12 h-6 relative">
+                    <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t">
+                <button 
+                  onClick={handleSignOut}
+                  className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
       </main>
     </div>
@@ -530,3 +737,224 @@ function StatCard({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// {activeTab === "users" && (
+//           <section className="bg-white rounded-xl p-6 shadow-sm border">
+//             <div className="mb-6">
+//               <input
+//                 type="text"
+//                 placeholder="Search users by name..."
+//                 value={searchTerm}
+//                 onChange={(e) => setSearchTerm(e.target.value)}
+//                 className="w-full max-w-md border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+//               />
+//             </div>
+
+//             {filteredUsers.length === 0 ? (
+//               <p className="text-gray-500 text-center py-8">No users found.</p>
+//             ) : (
+//               <div className="overflow-x-auto">
+//                 <table className="w-full text-sm">
+//                   <thead>
+//                     <tr className="text-left text-gray-600 border-b-2 border-gray-200">
+//                       <th className="py-3 px-4 font-semibold">Name</th>
+//                       <th className="py-3 px-4 font-semibold">Role</th>
+//                       <th className="py-3 px-4 font-semibold">Skill/Type</th>
+//                       <th className="py-3 px-4 font-semibold">Status</th>
+//                       <th className="py-3 px-4 font-semibold">Date Added</th>
+//                       <th className="py-3 px-4 font-semibold">Actions</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>
+//                     {filteredUsers.map((user) => (
+//                       <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+//                         <td className="py-4 px-4 font-medium text-gray-800">{user.name}</td>
+//                         <td className="py-4 px-4 capitalize">{user.role}</td>
+//                         <td className="py-4 px-4">{user.skill || "N/A"}</td>
+//                         <td className="py-4 px-4">
+//                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+//                             user.role === "client" 
+//                               ? "bg-blue-100 text-blue-700"
+//                               : user.verified 
+//                               ? "bg-green-100 text-green-700"
+//                               : "bg-yellow-100 text-yellow-700"
+//                           }`}>
+//                             {user.role === "client" ? "Active" : user.verified ? "Verified" : "Pending"}
+//                           </span>
+//                         </td>
+//                         <td className="py-4 px-4 text-gray-600">{user.dateAdded}</td>
+//                         <td className="py-4 px-4">
+//                           <button
+//                             onClick={() => deleteUser(user.id)}
+//                             className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-600 transition-colors"
+//                           >
+//                             Delete
+//                           </button>
+//                         </td>
+//                       </tr>
+//                     ))}
+//                   </tbody>
+//                 </table>
+//               </div>
+//             )}
+//           </section>
+//         )}
+
+//         {/* WORKER VERIFICATION TAB */}
+//         {activeTab === "verification" && (
+//           <section className="bg-white rounded-xl p-6 shadow-sm border">
+//             <p className="text-gray-600 mb-6">Review and approve worker verification requests.</p>
+
+//             {pendingWorkers.length === 0 ? (
+//               <div className="text-center py-12">
+//                 <div className="text-6xl mb-4">✅</div>
+//                 <p className="text-gray-500 text-lg">No pending verification requests.</p>
+//               </div>
+//             ) : (
+//               <div className="overflow-x-auto">
+//                 <table className="w-full text-sm">
+//                   <thead>
+//                     <tr className="text-left text-gray-600 border-b-2 border-gray-200">
+//                       <th className="py-3 px-4 font-semibold">Name</th>
+//                       <th className="py-3 px-4 font-semibold">Skill</th>
+//                       <th className="py-3 px-4 font-semibold">Date Added</th>
+//                       <th className="py-3 px-4 font-semibold">Status</th>
+//                       <th className="py-3 px-4 font-semibold">Action</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>
+//                     {pendingWorkers.map((worker) => (
+//                       <tr key={worker.id} className="border-b border-gray-100 hover:bg-gray-50">
+//                         <td className="py-4 px-4 font-medium text-gray-800">{worker.name}</td>
+//                         <td className="py-4 px-4">{worker.skill}</td>
+//                         <td className="py-4 px-4 text-gray-600">{worker.dateAdded}</td>
+//                         <td className="py-4 px-4">
+//                           <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+//                             Pending Review
+//                           </span>
+//                         </td>
+//                         <td className="py-4 px-4">
+//                           <button
+//                             onClick={() => verifyWorker(worker.id)}
+//                             className="bg-green-600 text-white px-4 py-2 rounded-lg text-xs hover:bg-green-700 transition-colors font-medium"
+//                           >
+//                             ✓ Verify Worker
+//                           </button>
+//                         </td>
+//                       </tr>
+//                     ))}
+//                   </tbody>
+//                 </table>
+//               </div>
+//             )}
+//           </section>
+//         )}
+
+//         {/* ADD WORKER TAB */}
+//         {activeTab === "add-worker" && (
+//           <section className="bg-white rounded-xl p-6 shadow-sm border max-w-2xl">
+//             <p className="text-gray-600 mb-6">Add a new worker to the platform. They will need verification before becoming active.</p>
+
+//             <div className="space-y-4">
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Full Name *
+//                 </label>
+//                 <input
+//                   type="text"
+//                   placeholder="Enter worker's full name"
+//                   value={newWorker.name}
+//                   onChange={(e) => setNewWorker({ ...newWorker, name: e.target.value })}
+//                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+//                 />
+//               </div>
+
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Skill/Profession *
+//                 </label>
+//                 <input
+//                   type="text"
+//                   placeholder="e.g., Electrician, Plumber, Carpenter"
+//                   value={newWorker.skill}
+//                   onChange={(e) => setNewWorker({ ...newWorker, skill: e.target.value })}
+//                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+//                 />
+//               </div>
+
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 mb-2">
+//                   Email (Optional)
+//                 </label>
+//                 <input
+//                   type="email"
+//                   placeholder="worker@example.com"
+//                   value={newWorker.email}
+//                   onChange={(e) => setNewWorker({ ...newWorker, email: e.target.value })}
+//                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+//                 />
+//               </div>
+
+//               <button
+//                 onClick={addWorker}
+//                 className="w-full bg-[#FF6B35] text-white rounded-lg px-6 py-3 font-medium hover:bg-[#e5612f] transition-colors"
+//               >
+//                 ➕ Add Worker
+//               </button>
+//             </div>
+//           </section>
+//         )}
+
+//         {/* SETTINGS TAB */}
+//         {activeTab === "settings" && (
+//           <section className="bg-white rounded-xl p-6 shadow-sm border max-w-2xl">
+//             <div className="space-y-6">
+//               <div className="pb-6 border-b">
+//                 <h3 className="text-lg font-semibold mb-2">Account Settings</h3>
+//                 <p className="text-gray-600 text-sm">Manage your admin account preferences</p>
+//               </div>
+
+//               <div className="space-y-4">
+//                 <div className="flex items-center justify-between py-3">
+//                   <div>
+//                     <p className="font-medium">Email Notifications</p>
+//                     <p className="text-sm text-gray-600">Receive updates about new verifications</p>
+//                   </div>
+//                   <button className="bg-gray-200 rounded-full w-12 h-6 relative">
+//                     <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+//                   </button>
+//                 </div>
+
+//                 <div className="flex items-center justify-between py-3">
+//                   <div>
+//                     <p className="font-medium">Auto-approve Workers</p>
+//                     <p className="text-sm text-gray-600">Automatically verify workers with complete profiles</p>
+//                   </div>
+//                   <button className="bg-gray-200 rounded-full w-12 h-6 relative">
+//                     <div className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+//                   </button>
+//                 </div>
+//               </div>
+
+//               <div className="pt-6 border-t">
+//                 <button 
+//                   onClick={handleSignOut}
+//                   className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
+//                 >
+//                   Sign Out
+//                 </button>
+//               </div>
+//             </div>
+//           </section>
+//         )}
