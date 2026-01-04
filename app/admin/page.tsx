@@ -9,7 +9,9 @@ import {
   deleteDoc, 
   doc,
   getDoc,
-  Timestamp 
+  Timestamp ,
+  query, 
+  where
 } from "firebase/firestore";
 import { 
   signInWithEmailAndPassword,
@@ -114,7 +116,7 @@ export default function Admin() {
     
     try {
       console.log("🔍 Fetching users collection...");
-      const usersCollection = collection(db, "users");
+      const usersCollection = collection(db, "workers"); // Changed from "users"
       const querySnapshot = await getDocs(usersCollection);
       
       console.log(`📊 Found ${querySnapshot.size} documents in Firestore`);
@@ -191,56 +193,86 @@ export default function Admin() {
   };
 
   const verifyWorker = async (id: string) => {
-    try {
-      const userRef = doc(db, "users", id);
-      await updateDoc(userRef, {
+  try {
+    // Update in users collection
+    const userRef = doc(db, "users", id);
+    await updateDoc(userRef, {
+      verified: true,
+    });
+    
+    // Find and update in workers collection
+    const workersQuery = query(
+      collection(db, "workers"),
+      where("userId", "==", id)
+    );
+    const workersSnapshot = await getDocs(workersQuery);
+    
+    workersSnapshot.forEach(async (workerDoc) => {
+      await updateDoc(doc(db, "workers", workerDoc.id), {
         verified: true,
       });
-      
-      setUsers((prev) =>
-        prev.map((user) =>
-          user.id === id ? { ...user, verified: true } : user
-        )
-      );
-      showNotification("Worker verified successfully!");
-    } catch (err: any) {
-      console.error("Error verifying worker:", err);
-      showNotification(`Failed to verify worker: ${err.message}`, "error");
-    }
-  };
+    });
+    
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === id ? { ...user, verified: true } : user
+      )
+    );
+    showNotification("Worker verified successfully in both collections!");
+  } catch (err: any) {
+    console.error("Error verifying worker:", err);
+    showNotification(`Failed to verify worker: ${err.message}`, "error");
+  }
+};
 
   const addWorker = async () => {
-    if (!newWorker.name.trim() || !newWorker.skill.trim()) {
-      showNotification("Please fill in all fields", "error");
-      return;
-    }
+  if (!newWorker.name.trim() || !newWorker.skill.trim()) {
+    showNotification("Please fill in all fields", "error");
+    return;
+  }
 
-    try {
-      const newWorkerData = {
-        name: newWorker.name.trim(),
-        role: "worker" as const,
-        verified: false,
-        skill: newWorker.skill.trim(),
-        email: newWorker.email.trim() || "",
-        dateAdded: new Date().toISOString().split("T")[0],
-        createdAt: Timestamp.now(),
-      };
+  try {
+    const newWorkerData = {
+      name: newWorker.name.trim(),
+      role: "worker" as const,
+      verified: false,
+      skill: newWorker.skill.trim(),
+      email: newWorker.email.trim() || "",
+      dateAdded: new Date().toISOString().split("T")[0],
+      createdAt: Timestamp.now(),
+    };
 
-      const docRef = await addDoc(collection(db, "users"), newWorkerData);
-      
-      const addedWorker: User = {
-        id: docRef.id,
-        ...newWorkerData,
-      };
+    console.log("Adding worker:", newWorkerData);
+    
+    // Add to users collection
+    const userDocRef = await addDoc(collection(db, "users"), newWorkerData);
+    console.log("✅ Worker added to users collection with ID:", userDocRef.id);
+    
+    // Also add to workers collection (for client-side marketplace)
+    const workerData = {
+      ...newWorkerData,
+      userId: userDocRef.id, // Reference to the user document
+      availability: true,
+      rating: 0,
+      completedJobs: 0,
+    };
+    
+    const workerDocRef = await addDoc(collection(db, "workers"), workerData);
+    console.log("✅ Worker added to workers collection with ID:", workerDocRef.id);
+    
+    const addedWorker: User = {
+      id: userDocRef.id,
+      ...newWorkerData,
+    };
 
-      setUsers((prev) => [addedWorker, ...prev]);
-      setNewWorker({ name: "", skill: "", email: "" });
-      showNotification("Worker added successfully!");
-    } catch (err: any) {
-      console.error("Error adding worker:", err);
-      showNotification(`Failed to add worker: ${err.message}`, "error");
-    }
-  };
+    setUsers((prev) => [addedWorker, ...prev]);
+    setNewWorker({ name: "", skill: "", email: "" });
+    showNotification("Worker added successfully to both collections!");
+  } catch (err: any) {
+    console.error("❌ Error adding worker:", err);
+    showNotification(`Failed to add worker: ${err.message}`, "error");
+  }
+};
 
   const deleteUser = async (id: string) => {
     if (!confirm("Are you sure you want to delete this user?")) {

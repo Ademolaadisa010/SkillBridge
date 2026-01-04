@@ -78,7 +78,6 @@ export default function Book() {
     }
   };
 
-  // 🔥 Navigate to chat page with worker info, create chat if not exists
   const handleChatNow = async (worker: Worker) => {
     if (!userId) {
       alert("Please login to chat with a worker");
@@ -86,13 +85,9 @@ export default function Book() {
     }
 
     try {
-      // Use a consistent ID format
       const chatId = userId < worker.id ? `${userId}_${worker.id}` : `${worker.id}_${userId}`;
       const chatRef = doc(db, "chats", chatId);
 
-      // 1. We skip the 'getDoc' check because it triggers a "Permission Denied" 
-      //    if the user isn't already a participant of a non-existent doc.
-      
       // 2. We use setDoc with merge: true. 
       //    If it's new, it creates it. If it exists, it won't overwrite participants.
       await setDoc(chatRef, {
