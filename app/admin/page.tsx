@@ -22,19 +22,27 @@ import { db, auth } from "@/lib/firebase";
 
 interface User {
   id: string;
-  name: string;
+  name?: string;
+  fullName?: string;
   role: "client" | "worker" | "admin";
   verified?: boolean;
   skill?: string;
-  dateAdded: string;
+  dateAdded?: string;
   createdAt?: any;
   email?: string;
+  phone?: string;
+  uid?: string;
 }
 
 export default function Admin() {
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [newWorker, setNewWorker] = useState({ name: "", skill: "", email: "" });
+  const [newWorker, setNewWorker] = useState({ 
+  name: "", 
+  skill: "", 
+  email: "",
+  phone: ""
+});
   const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,29 +124,31 @@ export default function Admin() {
     
     try {
       console.log("🔍 Fetching users collection...");
-      const usersCollection = collection(db, "workers"); // Changed from "users"
+      const usersCollection = collection(db, "workers");
       const querySnapshot = await getDocs(usersCollection);
       
       console.log(`📊 Found ${querySnapshot.size} documents in Firestore`);
       
       const fetchedUsers: User[] = [];
       querySnapshot.forEach((docSnapshot) => {
-        const data = docSnapshot.data();
-        console.log("📄 Document:", docSnapshot.id, data);
-        
-        fetchedUsers.push({
-          id: docSnapshot.id,
-          name: data.name || data.displayName || data.email || "Unknown",
-          role: data.role || "client",
-          verified: data.verified || false,
-          skill: data.skill || "",
-          email: data.email || "",
-          dateAdded: data.dateAdded || new Date().toISOString().split("T")[0],
-          createdAt: data.createdAt,
-        });
-      });
+    const data = docSnapshot.data();
+    console.log("📄 Document:", docSnapshot.id, data);
+    
+    fetchedUsers.push({
+      id: docSnapshot.id,
+      name: data.name || data.fullName || data.displayName || data.email || "Unknown",  // ← Handle both fields
+      fullName: data.fullName || data.name,
+      role: data.role || "client",
+      verified: data.verified || false,
+      skill: data.skill || "",
+      email: data.email || "",
+      phone: data.phone || "",
+      uid: data.uid || "",
+      dateAdded: data.dateAdded || new Date().toISOString().split("T")[0],
+      createdAt: data.createdAt,
+    });
+  });
       
-      // Sort by newest first
       fetchedUsers.sort((a, b) => {
         if (!a.createdAt || !b.createdAt) return 0;
         return b.createdAt.seconds - a.createdAt.seconds;
@@ -226,48 +236,59 @@ export default function Admin() {
 };
 
   const addWorker = async () => {
-  if (!newWorker.name.trim() || !newWorker.skill.trim()) {
-    showNotification("Please fill in all fields", "error");
+  if (!newWorker.name.trim() || !newWorker.skill.trim() || !newWorker.email.trim() || !newWorker.phone.trim()) {
+    showNotification("Please fill in all required fields", "error");
     return;
   }
 
   try {
     const newWorkerData = {
-      name: newWorker.name.trim(),
+      fullName: newWorker.name.trim(),
       role: "worker" as const,
       verified: false,
       skill: newWorker.skill.trim(),
-      email: newWorker.email.trim() || "",
-      dateAdded: new Date().toISOString().split("T")[0],
+      email: newWorker.email.trim(),
+      phone: newWorker.phone.trim(),
       createdAt: Timestamp.now(),
+      uid: "",
     };
 
-    console.log("Adding worker:", newWorkerData);
+    console.log("📝 Adding worker with data:", newWorkerData);
     
     // Add to users collection
     const userDocRef = await addDoc(collection(db, "users"), newWorkerData);
-    console.log("✅ Worker added to users collection with ID:", userDocRef.id);
+    console.log("✅ Added to users collection, ID:", userDocRef.id);
     
-    // Also add to workers collection (for client-side marketplace)
+    // Also add to workers collection (what the client reads from)
     const workerData = {
       ...newWorkerData,
-      userId: userDocRef.id, // Reference to the user document
+      userId: userDocRef.id,
       availability: true,
       rating: 0,
       completedJobs: 0,
+      location: "",
+      bio: "",
     };
     
+    console.log("📝 Adding to workers collection with data:", workerData);
     const workerDocRef = await addDoc(collection(db, "workers"), workerData);
-    console.log("✅ Worker added to workers collection with ID:", workerDocRef.id);
+    console.log("✅ Added to workers collection, ID:", workerDocRef.id);
     
     const addedWorker: User = {
       id: userDocRef.id,
-      ...newWorkerData,
+      fullName: newWorkerData.fullName,  // ← Changed from 'name'
+      role: newWorkerData.role,
+      verified: newWorkerData.verified,
+      skill: newWorkerData.skill,
+      email: newWorkerData.email,
+      phone: newWorkerData.phone,
+      createdAt: newWorkerData.createdAt,
+      uid: newWorkerData.uid,
     };
 
     setUsers((prev) => [addedWorker, ...prev]);
-    setNewWorker({ name: "", skill: "", email: "" });
-    showNotification("Worker added successfully to both collections!");
+    setNewWorker({ name: "", skill: "", email: "", phone: "" });
+    showNotification("Worker added successfully!");
   } catch (err: any) {
     console.error("❌ Error adding worker:", err);
     showNotification(`Failed to add worker: ${err.message}`, "error");
@@ -680,7 +701,7 @@ export default function Admin() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email (Optional)
+                  Email *
                 </label>
                 <input
                   type="email"
@@ -688,6 +709,21 @@ export default function Admin() {
                   value={newWorker.email}
                   onChange={(e) => setNewWorker({ ...newWorker, email: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  placeholder="08012345678"
+                  value={newWorker.phone}
+                  onChange={(e) => setNewWorker({ ...newWorker, phone: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                  required
                 />
               </div>
 

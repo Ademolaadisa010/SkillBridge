@@ -14,6 +14,7 @@ import {
   doc
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import Link from "next/link";
 
 interface Worker {
   id: string;
@@ -107,7 +108,7 @@ export default function ClientDashboard() {
       <div className="mb-6 sm:mb-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg sm:text-xl font-bold text-dark">Recommended for You</h3>
-          <button className="text-[#FF6B35] font-semibold text-sm hover:underline">View All</button>
+          <Link href="/book"><button className="text-[#FF6B35] font-semibold text-sm hover:underline">View All</button></Link>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -140,7 +141,6 @@ export default function ClientDashboard() {
         </div>
       </div>
 
-      {/* Static Activity - Can be dynamic later by fetching a 'notifications' collection */}
       <div>
         <h3 className="text-lg sm:text-xl font-bold text-dark mb-4">Recent Activity</h3>
         <div className="space-y-3">

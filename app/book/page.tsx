@@ -62,7 +62,6 @@ export default function Book() {
     fetchWorkers();
   }, []);
 
-  // 🔥 Save worker to bookmarks
   const handleBookmark = async (worker: Worker) => {
     if (!userId) {
       alert("Please login to save bookmarks");
