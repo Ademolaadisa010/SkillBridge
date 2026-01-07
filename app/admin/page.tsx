@@ -26,7 +26,7 @@ interface User {
   fullName?: string;
   role: "client" | "worker" | "admin";
   verified?: boolean;
-  skill?: string;
+  service?: string;
   dateAdded?: string;
   createdAt?: any;
   email?: string;
@@ -39,7 +39,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [newWorker, setNewWorker] = useState({ 
   name: "", 
-  skill: "", 
+  service: "", 
   email: "",
   phone: ""
 });
@@ -140,7 +140,7 @@ export default function Admin() {
       fullName: data.fullName || data.name,
       role: data.role || "client",
       verified: data.verified || false,
-      skill: data.skill || "",
+      service: data.service || "",
       email: data.email || "",
       phone: data.phone || "",
       uid: data.uid || "",
@@ -236,7 +236,7 @@ export default function Admin() {
 };
 
   const addWorker = async () => {
-  if (!newWorker.name.trim() || !newWorker.skill.trim() || !newWorker.email.trim() || !newWorker.phone.trim()) {
+  if (!newWorker.name.trim() || !newWorker.service.trim() || !newWorker.email.trim() || !newWorker.phone.trim()) {
     showNotification("Please fill in all required fields", "error");
     return;
   }
@@ -246,7 +246,7 @@ export default function Admin() {
       fullName: newWorker.name.trim(),
       role: "worker" as const,
       verified: false,
-      skill: newWorker.skill.trim(),
+      service: newWorker.service.trim(),
       email: newWorker.email.trim(),
       phone: newWorker.phone.trim(),
       createdAt: Timestamp.now(),
@@ -279,7 +279,7 @@ export default function Admin() {
       fullName: newWorkerData.fullName,  // ← Changed from 'name'
       role: newWorkerData.role,
       verified: newWorkerData.verified,
-      skill: newWorkerData.skill,
+      service: newWorkerData.service,
       email: newWorkerData.email,
       phone: newWorkerData.phone,
       createdAt: newWorkerData.createdAt,
@@ -287,7 +287,7 @@ export default function Admin() {
     };
 
     setUsers((prev) => [addedWorker, ...prev]);
-    setNewWorker({ name: "", skill: "", email: "", phone: "" });
+    setNewWorker({ name: "", service: "", email: "", phone: "" });
     showNotification("Worker added successfully!");
   } catch (err: any) {
     console.error("❌ Error adding worker:", err);
@@ -498,7 +498,7 @@ export default function Admin() {
                       <div>
                         <p className="font-medium text-gray-800">{user.name}</p>
                         <p className="text-sm text-gray-500">
-                          {user.role === "worker" ? `${user.skill} - ` : ""}{user.email}
+                          {user.role === "worker" ? `${user.service} - ` : ""}{user.email}
                         </p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -587,7 +587,7 @@ export default function Admin() {
                       <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-4 px-4 font-medium text-gray-800">{user.name}</td>
                         <td className="py-4 px-4 capitalize">{user.role}</td>
-                        <td className="py-4 px-4">{user.skill || "N/A"}</td>
+                        <td className="py-4 px-4">{user.service || "N/A"}</td>
                         <td className="py-4 px-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             user.role === "client" 
@@ -643,7 +643,7 @@ export default function Admin() {
                     {pendingWorkers.map((worker) => (
                       <tr key={worker.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-4 px-4 font-medium text-gray-800">{worker.name}</td>
-                        <td className="py-4 px-4">{worker.skill}</td>
+                        <td className="py-4 px-4">{worker.service}</td>
                         <td className="py-4 px-4 text-gray-600">{worker.dateAdded}</td>
                         <td className="py-4 px-4">
                           <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
@@ -693,8 +693,8 @@ export default function Admin() {
                 <input
                   type="text"
                   placeholder="e.g., Electrician, Plumber, Carpenter"
-                  value={newWorker.skill}
-                  onChange={(e) => setNewWorker({ ...newWorker, skill: e.target.value })}
+                  value={newWorker.service}
+                  onChange={(e) => setNewWorker({ ...newWorker, service: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                 />
               </div>

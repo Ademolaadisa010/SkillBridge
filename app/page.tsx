@@ -1,10 +1,16 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import Hero from "@/public/hero-sec.jpg";
 export default function Landingpage(){
   return(
     <div>
-      <nav className="bg-white shadow-sm sticky top-0 z-50">
+      <motion.nav className="bg-white shadow-sm sticky top-0 z-50"
+        initial={{y:-50, opacity:0}}
+        whileInView={{y:0, opacity:1}}
+        transition={{duration:1}}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
                 <div className="flex items-center space-x-2">
@@ -25,7 +31,7 @@ export default function Landingpage(){
                 </button>
             </div>
         </div>
-      </nav>
+      </motion.nav>
 
 
       <section className="bg-gradient-to-br from-[#E9F5F3] via-white to-[#E9F5F3] py-12 sm:py-20">
@@ -61,9 +67,13 @@ export default function Landingpage(){
                           </div>
                       </div>
                   </div>
-                  <div className="flex-1 w-full max-w-lg">
+                  <motion.div className="flex-1 w-full max-w-lg"
+                    initial={{x:100, opacity:0}}
+                    whileInView={{x:0, opacity:1}}
+                    transition={{duration:1}}
+                  >
                       <Image src={Hero} alt="Skilled workers" className="rounded-2xl shadow-2xl w-full h-64 sm:h-80 lg:h-96 object-cover"/>
-                  </div>
+                  </motion.div>
               </div>
           </div>
         </section>
@@ -75,48 +85,72 @@ export default function Landingpage(){
                     <p className="text-base sm:text-lg text-gray-600">Find the right professional for your needs</p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center">
+                    <motion.div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
+                        initial={{opacity:0, scale:1.2}}
+                        whileInView={{opacity:1, scale:1}}
+                        transition={{duration:0.5, type: "spring", stiffness: 150}}
+                    >
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                             <i className="fas fa-wrench text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Plumbing</h3>
                         <p className="text-xs sm:text-sm text-gray-600">850+ workers</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center">
+                    </motion.div>
+                    <motion.div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
+                        initial={{opacity:0, scale:1.2}}
+                        whileInView={{opacity:1, scale:1}}
+                        transition={{duration:0.5, delay:0.1, type: "spring", stiffness: 150}}
+                    >
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                             <i className="fas fa-bolt text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Electrical</h3>
                         <p className="text-xs sm:text-sm text-gray-600">720+ workers</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center">
+                    </motion.div>
+                    <motion.div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
+                        initial={{opacity:0, scale:1.2}}
+                        whileInView={{opacity:1, scale:1}}
+                        transition={{duration:0.5, delay:0.2, type: "spring", stiffness: 150}}
+                    >
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                             <i className="fas fa-hammer text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Carpentry</h3>
                         <p className="text-xs sm:text-sm text-gray-600">650+ workers</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center">
+                    </motion.div>
+                    <motion.div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
+                        initial={{opacity:0, scale:1.2}}
+                        whileInView={{opacity:1, scale:1}}
+                        transition={{duration:0.5, delay:0.3, type: "spring", stiffness: 150}}
+                    >
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                             <i className="fas fa-car text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Mechanics</h3>
                         <p className="text-xs sm:text-sm text-gray-600">920+ workers</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center">
+                    </motion.div>
+                    <motion.div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
+                        initial={{opacity:0, scale:1.2}}
+                        whileInView={{opacity:1, scale:1}}
+                        transition={{duration:0.5, delay:0.4, type: "spring", stiffness: 150}}
+                    >
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                             <i className="fas fa-paint-roller text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Painting</h3>
                         <p className="text-xs sm:text-sm text-gray-600">580+ workers</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center">
+                    </motion.div>
+                    <motion.div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
+                        initial={{opacity:0, scale:1.2}}
+                        whileInView={{opacity:1, scale:1}}
+                        transition={{duration:0.5, delay:0.5, type: "spring", stiffness: 150}}
+                    >
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                             <i className="fas fa-tools text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Welding</h3>
                         <p className="text-xs sm:text-sm text-gray-600">430+ workers</p>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </section>
@@ -128,30 +162,42 @@ export default function Landingpage(){
                     <p className="text-base sm:text-lg text-gray-600">Get started in three simple steps</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center relative">
+                    <motion.div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center relative"
+                        initial={{opacity:0, x:-70}}
+                        whileInView={{opacity:1, x:0}}
+                        transition={{duration:1}}
+                    >
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-[#FF6B35] text-white rounded-full flex items-center justify-center font-bold text-xl">1</div>
                         <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#FF6B35] to-[#F4A261] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 mt-4">
                             <i className="fas fa-search text-white text-2xl sm:text-3xl"></i>
                         </div>
                         <h3 className="text-lg sm:text-xl font-bold text-[#264653] mb-2 sm:mb-3">Search & Browse</h3>
                         <p className="text-sm sm:text-base text-gray-600">Find skilled workers by service type, location, and ratings. View profiles, reviews, and past work.</p>
-                    </div>
-                    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center relative">
+                    </motion.div>
+                    <motion.div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center relative"
+                        initial={{opacity:0, y:70}}
+                        whileInView={{opacity:1, y:0}}
+                        transition={{duration:1}}
+                    >
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-[#2A9D8F] text-white rounded-full flex items-center justify-center font-bold text-xl">2</div>
                         <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#2A9D8F] to-teal-400 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 mt-4">
                             <i className="fas fa-calendar-check text-white text-2xl sm:text-3xl"></i>
                         </div>
                         <h3 className="text-lg sm:text-xl font-bold text-[#264653] mb-2 sm:mb-3">Book & Connect</h3>
                         <p className="text-sm sm:text-base text-gray-600">Send job requests with details, date, and location. Chat directly with workers to discuss your needs.</p>
-                    </div>
-                    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center relative">
+                    </motion.div>
+                    <motion.div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg text-center relative"
+                        initial={{opacity:0, x:70}}
+                        whileInView={{opacity:1, x:0}}
+                        transition={{duration:1}}
+                    >
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-[#F4A261] text-white rounded-full flex items-center justify-center font-bold text-xl">3</div>
                         <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#F4A261] to-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 mt-4">
                             <i className="fas fa-star text-white text-2xl sm:text-3xl"></i>
                         </div>
                         <h3 className="text-lg sm:text-xl font-bold text-dark mb-2 sm:mb-3">Get Work Done</h3>
                         <p className="text-sm sm:text-base text-gray-600">Work gets completed professionally. Rate and review to help others in the community.</p>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </section>
@@ -169,7 +215,11 @@ export default function Landingpage(){
                     </a>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer">
+                    <motion.div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer"
+                        initial={{opacity:0}}
+                        whileInView={{opacity:1}}
+                        transition={{duration:1.5}}
+                    >
                         <div className="relative h-48">
                             <Image src={Hero} alt="Worker" className="w-full h-full object-cover"/>
                             <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full flex items-center gap-1">
@@ -192,8 +242,12 @@ export default function Landingpage(){
                                 <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-opacity-90 transition">Book Now</button>
                             </div>
                         </div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer">
+                    </motion.div>
+                    <motion.div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer"
+                        initial={{opacity:0}}
+                        whileInView={{opacity:1}}
+                        transition={{duration:1.5, delay:0.2}}
+                    >
                         <div className="relative h-48">
                             <Image src={Hero} alt="Worker" className="w-full h-full object-cover"/>
                             <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full flex items-center gap-1">
@@ -216,8 +270,12 @@ export default function Landingpage(){
                                 <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-opacity-90 transition">Book Now</button>
                             </div>
                         </div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer">
+                    </motion.div>
+                    <motion.div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer"
+                        initial={{opacity:0}}
+                        whileInView={{opacity:1}}
+                        transition={{duration:1.5, delay:0.4}}
+                    >
                         <div className="relative h-48">
                             <Image src={Hero} alt="Worker" className="w-full h-full object-cover"/>
                             <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full flex items-center gap-1">
@@ -240,8 +298,12 @@ export default function Landingpage(){
                                 <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-opacity-90 transition">Book Now</button>
                             </div>
                         </div>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer">
+                    </motion.div>
+                    <motion.div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition cursor-pointer"
+                        initial={{opacity:0}}
+                        whileInView={{opacity:1}}
+                        transition={{duration:1.5, delay:0.8}}
+                    >
                         <div className="relative h-48">
                             <Image src={Hero} alt="Worker" className="w-full h-full object-cover"/>
                             <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full flex items-center gap-1">
@@ -264,7 +326,7 @@ export default function Landingpage(){
                                 <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-opacity-90 transition">Book Now</button>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </section>
@@ -277,7 +339,11 @@ export default function Landingpage(){
                     <p className="text-base sm:text-lg text-gray-600">Real experiences from our community</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+                    <motion.div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg"
+                        initial={{opacity:0, x:-70}}
+                        whileInView={{opacity:1, x:0}}
+                        transition={{duration:2, type: "spring", stiffness:150}}
+                    >
                         <div className="flex items-center gap-1 mb-4">
                             <i className="fas fa-star text-yellow-400"></i>
                             <i className="fas fa-star text-yellow-400"></i>
@@ -293,8 +359,12 @@ export default function Landingpage(){
                                 <div className="text-sm text-gray-500">Homeowner, Accra</div>
                             </div>
                         </div>
-                    </div>
-                    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+                    </motion.div>
+                    <motion.div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg"
+                        initial={{opacity:0, y:70}}
+                        whileInView={{opacity:1, y:0}}
+                        transition={{duration:2, type: "spring", stiffness:150, delay:0.1}}
+                    >
                         <div className="flex items-center gap-1 mb-4">
                             <i className="fas fa-star text-yellow-400"></i>
                             <i className="fas fa-star text-yellow-400"></i>
@@ -310,8 +380,12 @@ export default function Landingpage(){
                                 <div className="text-sm text-gray-500">Carpenter, Kumasi</div>
                             </div>
                         </div>
-                    </div>
-                    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+                    </motion.div>
+                    <motion.div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg"
+                        initial={{opacity:0, x:70}}
+                        whileInView={{opacity:1, x:0}}
+                        transition={{duration:2, type: "spring", stiffness:150, delay:0.2}}
+                    >
                         <div className="flex items-center gap-1 mb-4">
                             <i className="fas fa-star text-yellow-400"></i>
                             <i className="fas fa-star text-yellow-400"></i>
@@ -327,7 +401,7 @@ export default function Landingpage(){
                                 <div className="text-sm text-gray-500">Business Owner, Lagos</div>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </section>

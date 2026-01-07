@@ -175,7 +175,7 @@ export default function WorkerDashboard() {
                     <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 pt-4 md:pt-0">
                       <span className="text-xs text-gray-400 font-medium">{lead.time}</span>
                       <Link 
-                        href={`/worker/messages?chatId=${lead.id}`}
+                        href={`/worker-messages?chatId=${lead.id}`}
                         className="flex items-center gap-2 bg-gray-800 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-black transition-colors"
                       >
                         <i className="fa-solid fa-comment-dots"></i>
