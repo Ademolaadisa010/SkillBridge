@@ -6,7 +6,7 @@ import Hero from "@/public/hero-sec.jpg";
 export default function Landingpage(){
   return(
     <div>
-      <motion.nav className="bg-white shadow-sm sticky top-0 z-50"
+      <motion.nav className="bg-white shadow-sm sticky top-0 z-999"
         initial={{y:-50, opacity:0}}
         whileInView={{y:0, opacity:1}}
         transition={{duration:1}}
