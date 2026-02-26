@@ -54,11 +54,11 @@ export default function Landingpage(){
                       </div>
                       <div className="flex items-center justify-center lg:justify-start gap-6 sm:gap-8 mt-6 sm:mt-8">
                           <div className="text-center">
-                              <div className="text-2xl sm:text-3xl font-bold text-[#FF6B35]">5,000+</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-[#FF6B35]">50+</div>
                               <div className="text-xs sm:text-sm text-gray-600">Skilled Workers</div>
                           </div>
                           <div className="text-center">
-                              <div className="text-2xl sm:text-3xl font-bold text-[#2A9D8F]">15,000+</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-[#2A9D8F]">10+</div>
                               <div className="text-xs sm:text-sm text-gray-600">Jobs Completed</div>
                           </div>
                           <div className="text-center">
@@ -94,7 +94,7 @@ export default function Landingpage(){
                             <i className="fas fa-wrench text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Plumbing</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">850+ workers</p>
+                        <p className="text-xs sm:text-sm text-gray-600">5+ workers</p>
                     </motion.div>
                     <motion.div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
                         initial={{opacity:0, scale:1.2}}
@@ -105,7 +105,7 @@ export default function Landingpage(){
                             <i className="fas fa-bolt text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Electrical</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">720+ workers</p>
+                        <p className="text-xs sm:text-sm text-gray-600">10+ workers</p>
                     </motion.div>
                     <motion.div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
                         initial={{opacity:0, scale:1.2}}
@@ -116,7 +116,7 @@ export default function Landingpage(){
                             <i className="fas fa-hammer text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Carpentry</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">650+ workers</p>
+                        <p className="text-xs sm:text-sm text-gray-600">5+ workers</p>
                     </motion.div>
                     <motion.div className="bg-gradient-to-br from-red-50 to-red-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
                         initial={{opacity:0, scale:1.2}}
@@ -127,7 +127,7 @@ export default function Landingpage(){
                             <i className="fas fa-car text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Mechanics</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">920+ workers</p>
+                        <p className="text-xs sm:text-sm text-gray-600">20+ workers</p>
                     </motion.div>
                     <motion.div className="bg-gradient-to-br from-green-50 to-green-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
                         initial={{opacity:0, scale:1.2}}
@@ -138,7 +138,7 @@ export default function Landingpage(){
                             <i className="fas fa-paint-roller text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Painting</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">580+ workers</p>
+                        <p className="text-xs sm:text-sm text-gray-600">15+ workers</p>
                     </motion.div>
                     <motion.div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl hover:shadow-lg transition cursor-pointer text-center"
                         initial={{opacity:0, scale:1.2}}
@@ -149,7 +149,7 @@ export default function Landingpage(){
                             <i className="fas fa-tools text-white text-xl sm:text-2xl"></i>
                         </div>
                         <h3 className="font-semibold text-[#264653] text-sm sm:text-base mb-1">Welding</h3>
-                        <p className="text-xs sm:text-sm text-gray-600">430+ workers</p>
+                        <p className="text-xs sm:text-sm text-gray-600">30+ workers</p>
                     </motion.div>
                 </div>
             </div>
@@ -438,19 +438,19 @@ export default function Landingpage(){
                     <div>
                         <h4 className="font-bold mb-4">For Clients</h4>
                         <ul className="space-y-2 text-sm text-gray-400">
-                            <li><a href="#" className="hover:text-primary transition">Find Workers</a></li>
-                            <li><a href="#" className="hover:text-primary transition">How It Works</a></li>
+                            <li><a href="/login" className="hover:text-primary transition">Find Workers</a></li>
+                            <li><a href="#how-it-works" className="hover:text-primary transition">How It Works</a></li>
                             <li><a href="#" className="hover:text-primary transition">Safety Tips</a></li>
-                            <li><a href="#" className="hover:text-primary transition">Pricing</a></li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="font-bold mb-4">For Workers</h4>
                         <ul className="space-y-2 text-sm text-gray-400">
-                            <li><a href="#" className="hover:text-[#FF6B35] transition">Join as Worker</a></li>
-                            <li><a href="#" className="hover:text-[#FF6B35] transition">Verification Process</a></li>
+                            <li><a href="/register" className="hover:text-[#FF6B35] transition">Join as Worker</a></li>
+                            {/* <li><a href="#" className="hover:text-[#FF6B35] transition">Verification Process</a></li> */}
                             <li><a href="#" className="hover:text-[#FF6B35] transition">Success Stories</a></li>
                             <li><a href="#" className="hover:text-[#FF6B35] transition">Resources</a></li>
+                            <li><a href="#" className="hover:text-primary transition">Pricing</a></li>
                         </ul>
                     </div>
                     <div>
@@ -464,7 +464,7 @@ export default function Landingpage(){
                     </div>
                 </div>
                 <div className="border-t border-gray-700 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <p className="text-sm text-gray-400">© 2024 SkillBridge. All rights reserved.</p>
+                    <p className="text-sm text-gray-400">&copy; 2025 SkillBridge. All rights reserved.</p>
                     <div className="flex gap-4">
                         <a href="#" className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center hover:bg-[#FF6B35] transition">
                             <i className="fab fa-facebook-f"></i>
