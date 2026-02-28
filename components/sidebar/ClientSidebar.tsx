@@ -2,68 +2,87 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function ClientSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
   const navItems = [
-    { name: "Dashboard", href: "/client/dashboard", icon: "fa-solid fa-house" },
-    { name: "Book Service", href: "/book", icon: "fas fa-calendar" },
-    { name: "Messages", href: "/message", icon: "fa-solid fa-message" },
-    { name: "Bookmark", href: "/bookmark", icon: "fa-solid fa-bookmark" },
-    { name: "Profile", href: "/client-profile", icon: "fa-solid fa-user" },
+    { name: "Dashboard",      href: "/client/dashboard",   icon: "fa-solid fa-house" },
+    { name: "Book Service",   href: "/client/book",        icon: "fa-solid fa-calendar-plus" },
+    { name: "My Bookings",    href: "/client/bookings",    icon: "fa-solid fa-calendar-check" },
+    { name: "Messages",       href: "/client/messages",    icon: "fa-solid fa-message" },
+    { name: "Payments",       href: "/client/payments",    icon: "fa-solid fa-credit-card" },
+    { name: "Saved Workers",  href: "/client/saved",       icon: "fa-solid fa-bookmark" },
+    { name: "Disputes",       href: "/client/disputes",    icon: "fa-solid fa-scale-balanced" },
+    { name: "Notifications",  href: "/client/notifications", icon: "fa-solid fa-bell" },
+    { name: "Settings",       href: "/client/settings",    icon: "fa-solid fa-gear" },
+    { name: "Help Center",    href: "/help",               icon: "fa-solid fa-circle-question" },
   ];
 
-  const handleLogout = () => {
-    // Add your logout logic here (e.g., supabase.auth.signOut() or next-auth signOut())
-    console.log("Logging out...");
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   return (
     <aside className="w-64 bg-white border-r border-gray-100 hidden lg:flex flex-col h-screen sticky top-0">
-      {/* Logo Section */}
-      <div className="flex items-center justify-center pt-8 pb-4 space-x-2">
-        <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B35] to-[#2A9D8F] rounded-lg flex items-center justify-center shadow-sm">
-          <i className="fas fa-handshake text-white text-lg"></i>
+      {/* Logo */}
+      <div className="flex items-center gap-2 px-6 py-6 border-b border-gray-100">
+        <div className="w-9 h-9 bg-[#10b981] rounded-lg flex items-center justify-center shadow-sm shrink-0">
+          <i className="fas fa-handshake text-white text-base"></i>
         </div>
-        <span className="text-xl font-bold text-gray-800 tracking-tight">SkillBridge</span>
+        <span className="text-lg font-bold text-[#0c4a6e] tracking-tight">SkillBridge</span>
       </div>
 
-      {/* Main Navigation Links */}
-      <nav className="flex flex-col mt-8 px-4 space-y-1 flex-1">
+      {/* Label */}
+      <div className="px-6 pt-5 pb-2">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client Menu</span>
+      </div>
+
+      {/* Nav Links */}
+      <nav className="flex flex-col px-3 space-y-0.5 flex-1 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+
           return (
             <Link
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex items-center py-3 px-4 rounded-md transition-all duration-200 group ${
+              className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all duration-200 group ${
                 isActive
-                  ? "bg-[#FF6B35] text-white shadow-md"
-                  : "text-gray-600 hover:bg-orange-50 hover:text-[#FF6B35]"
+                  ? "bg-[#0284c7] text-white shadow-md"
+                  : "text-gray-600 hover:bg-[#f0f9ff] hover:text-[#0284c7]"
               }`}
             >
-              <i className={`${item.icon} w-6 transition-colors ${
-                isActive ? "text-white" : "text-gray-400 group-hover:text-[#FF6B35]"
-              }`}></i>
-              <span className="font-medium">{item.name}</span>
+              <i className={`${item.icon} w-5 text-center text-sm transition-colors ${
+                isActive ? "text-white" : "text-gray-400 group-hover:text-[#0284c7]"
+              }`} />
+              <span className="text-sm font-medium">{item.name}</span>
+
+              {/* Active indicator dot */}
+              {isActive && (
+                <span className="ml-auto w-1.5 h-1.5 bg-white rounded-full opacity-80" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Logout Section */}
-      <div className="p-4 border-t border-gray-100">
+      <div className="p-3 border-t border-gray-100">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full py-3 px-4 rounded-md text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group"
+          className="flex items-center gap-3 w-full py-2.5 px-3 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group"
         >
-          <i className="fa-solid fa-right-from-bracket w-6 text-gray-400 group-hover:text-red-600"></i>
-          <span className="font-medium">Logout</span>
+          <i className="fa-solid fa-right-from-bracket w-5 text-center text-sm text-gray-400 group-hover:text-red-500 transition-colors" />
+          <span className="text-sm font-medium">Logout</span>
         </button>
       </div>
     </aside>
