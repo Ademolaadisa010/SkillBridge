@@ -104,15 +104,13 @@ export default function Login() {
 
       <div className="flex flex-col lg:flex-row min-h-screen w-full">
 
-        {/* ── Left Panel ── */}
         <aside className="lg:w-5/12 bg-[#0c4a6e] text-white relative overflow-hidden flex flex-col justify-between p-8 lg:p-12">
           <div className="absolute inset-0 bg-gradient-to-b from-[#0c4a6e]/90 to-[#075985]/90" />
 
-          {/* Logo + Content */}
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
               <div className="bg-[#10b981] p-2 rounded-lg">
-                <Hammer className="w-6 h-6 text-white" />
+                <i className="fas fa-handshake w-6 h-6 text-white text-lg"></i>
               </div>
               <span className="text-2xl font-bold tracking-tight">SkillBridge</span>
             </div>
