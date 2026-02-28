@@ -414,6 +414,7 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Top Rated Workers ── */}
       <section className="py-16 sm:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -698,9 +699,15 @@ export default function LandingPage() {
             <div>
               <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Company</h4>
               <ul className="space-y-2 text-sm text-blue-200">
-                {["About Us", "Contact", "Help Center", "Terms of Service", "Privacy Policy"].map((l) => (
-                  <li key={l}>
-                    <a href="#" className="hover:text-[#34d399] transition">{l}</a>
+                {[
+                  { label: "About Us", href: "#" },
+                  { label: "Contact", href: "/contact" },
+                  { label: "Help Center", href: "/help" },
+                  { label: "Terms of Service", href: "#" },
+                  { label: "Privacy Policy", href: "#" },
+                ].map((l) => (
+                  <li key={l.label}>
+                    <Link href={l.href} className="hover:text-[#34d399] transition">{l.label}</Link>
                   </li>
                 ))}
               </ul>
