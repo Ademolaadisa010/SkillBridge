@@ -289,7 +289,6 @@ export default function ClientDashboardPage() {
               )}
             </div>
 
-            {/* ── Recommended Workers ── */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-[#0c4a6e]">Recommended Workers</h3>
@@ -317,7 +316,7 @@ export default function ClientDashboardPage() {
                     <div key={worker.id} className="bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-lg transition group">
                       <div className="flex items-start gap-3 mb-4">
                         <div className="relative">
-                          <Image src={Hero} alt={worker.fullName} className="w-14 h-14 rounded-full object-cover" />
+                          <Image src={Hero} alt="worker" className="w-14 h-14 rounded-full object-cover" />
                           {worker.verified && (
                             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#10b981] rounded-full flex items-center justify-center border-2 border-white">
                               <ShieldCheck className="w-2.5 h-2.5 text-white" />
@@ -360,7 +359,6 @@ export default function ClientDashboardPage() {
               </div>
             </div>
 
-            {/* ── Recent Activity ── */}
             <div>
               <h3 className="text-base font-bold text-[#0c4a6e] mb-4">Recent Activity</h3>
               <div className="space-y-2">
