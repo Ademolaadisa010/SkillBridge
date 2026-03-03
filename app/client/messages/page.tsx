@@ -18,7 +18,6 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import ClientSidebar from "@/components/sidebar/ClientSidebar";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
 interface Participant {
   uid: string;
   name: string;

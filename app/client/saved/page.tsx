@@ -17,7 +17,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import ClientSidebar from "@/components/sidebar/ClientSidebar";
 import toast, { Toaster } from "react-hot-toast";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
 interface SavedWorker {
   id: string;
   fullName: string;
@@ -44,7 +43,6 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
   other:         { bg: "bg-gray-100",   text: "text-gray-700" },
 };
 
-// ─── Worker Card ────────────────────────────────────────────────────────────────
 function WorkerCard({
   worker,
   onUnsave,
@@ -74,17 +72,14 @@ function WorkerCard({
           exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
           className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden group"
         >
-          {/* Top image area */}
           <div className="relative h-40">
             <Image
               src={Hero}
               alt={worker.fullName}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            {/* Overlay gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
-            {/* Unsave button */}
             <button
               onClick={handleUnsave}
               className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition group/btn shadow-sm"
@@ -93,21 +88,18 @@ function WorkerCard({
               <Heart className="w-4 h-4 text-red-500 fill-red-500 group-hover/btn:scale-110 transition-transform" />
             </button>
 
-            {/* Verified badge */}
             {worker.verified && (
               <div className="absolute top-3 left-3 bg-[#10b981] text-white px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
                 <ShieldCheck className="w-2.5 h-2.5" /> Verified
               </div>
             )}
 
-            {/* Rating */}
             <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
               <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
               <span className="text-xs font-bold text-gray-700">{worker.rating || "5.0"}</span>
             </div>
           </div>
 
-          {/* Card body */}
           <div className="p-4">
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0">
@@ -121,7 +113,6 @@ function WorkerCard({
               )}
             </div>
 
-            {/* Meta */}
             <div className="space-y-1.5 mb-4">
               {worker.location && (
                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -136,7 +127,6 @@ function WorkerCard({
               </div>
             </div>
 
-            {/* Price + Actions */}
             <div className="flex items-center justify-between pt-3 border-t border-gray-50">
               <span className="text-sm font-bold text-[#0284c7]">{worker.price}/hr</span>
               <div className="flex items-center gap-2">
@@ -162,7 +152,6 @@ function WorkerCard({
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────────
 export default function SavedWorkersPage() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -184,7 +173,6 @@ export default function SavedWorkersPage() {
 
         if (workerIds.length === 0) { setSavedWorkers([]); setLoading(false); return; }
 
-        // Fetch each worker's data
         const workers = await Promise.all(
           workerIds.map(async (wid) => {
             const wSnap = await getDoc(doc(db, "workers", wid));
