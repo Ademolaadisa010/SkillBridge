@@ -84,7 +84,7 @@ function OfferCard({
   accepting,
 }: {
   offer: Offer;
-  onAccept: (offer: Offer) => Promise<void>;
+  onAccept: (offer: Offer) => void;
   onReject: (offer: Offer) => Promise<void>;
   accepting: string | null;
 }) {
@@ -151,18 +151,13 @@ function OfferCard({
         <div className="flex gap-2">
           <button
             onClick={() => onAccept(offer)}
-            disabled={accepting === offer.id}
-            className="flex-1 bg-[#0284c7] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#0369a1] transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
+            className="flex-1 bg-[#0284c7] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#0369a1] transition flex items-center justify-center gap-2 shadow-sm"
           >
-            {accepting === offer.id
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <CheckCircle2 className="w-3.5 h-3.5" />
-            }
+            <CheckCircle2 className="w-3.5 h-3.5" />
             Accept Offer
           </button>
           <button
             onClick={() => onReject(offer)}
-            disabled={accepting === offer.id}
             className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <X className="w-3.5 h-3.5" /> Decline
@@ -342,7 +337,7 @@ function BookingModal({
   const pendingOffers = offers.filter(o => o.status === "pending");
 
   // Step 1 — client clicks Accept → open payment modal
-  const handleAccept = (offer: Offer) => {
+  const handleAccept = (offer: Offer): void => {
     setPayOffer(offer);
   };
 

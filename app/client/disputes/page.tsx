@@ -19,7 +19,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import ClientSidebar from "@/components/sidebar/ClientSidebar";
 import toast, { Toaster } from "react-hot-toast";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
 type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
 type DisputeReason = "work_not_done" | "poor_quality" | "no_show" | "overcharge" | "damage" | "other";
 
