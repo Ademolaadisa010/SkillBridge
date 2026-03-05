@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,6 +18,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import ClientSidebar from "@/components/sidebar/ClientSidebar";
 
+// ─── Types ─────────────────────────────────────────────────────────────────────
 interface Participant {
   uid: string;
   name: string;
@@ -73,7 +74,7 @@ function getAvatarColor(name: string) {
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
-export default function MessagesPage() {
+function MessagesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -441,5 +442,20 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
+  );
+}
+// ─── Suspense wrapper (required for useSearchParams in Next.js) ───────────────
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-[#0284c7] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400 font-medium">Loading…</p>
+        </div>
+      </div>
+    }>
+      <MessagesPageInner />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Send, Search, Menu, ArrowLeft, X, MessageCircle, Lock, CheckCheck, Check, Circle, MoreVertical, ShieldCheck, Clock } from "lucide-react";
@@ -18,7 +18,7 @@ const AVATAR_COLORS = ["bg-blue-500","bg-emerald-500","bg-violet-500","bg-orange
 function avatarColor(name: string) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]; }
 function initials(name: string) { return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2); }
 
-export default function WorkerMessagesPage() {
+function WorkerMessagesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -159,5 +159,20 @@ export default function WorkerMessagesPage() {
         </div>
       </div>
     </div>
+  );
+}
+// ─── Suspense wrapper (required for useSearchParams in Next.js) ───────────────
+export default function WorkerMessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-[#0284c7] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400 font-medium">Loading…</p>
+        </div>
+      </div>
+    }>
+      <WorkerMessagesPageInner />
+    </Suspense>
   );
 }
