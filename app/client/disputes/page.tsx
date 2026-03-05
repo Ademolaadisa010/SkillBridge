@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -336,7 +336,7 @@ function DisputeDetailModal({ dispute, onClose }: { dispute: Dispute; onClose: (
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
-export default function DisputesPage() {
+function DisputesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -581,5 +581,20 @@ export default function DisputesPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+// ─── Suspense wrapper (required for useSearchParams in Next.js) ───────────────
+export default function DisputesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-[#0284c7] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400 font-medium">Loading…</p>
+        </div>
+      </div>
+    }>
+      <DisputesPageInner />
+    </Suspense>
   );
 }

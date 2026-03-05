@@ -8,7 +8,7 @@ import {
   Menu, MapPin, Calendar, Clock, Star, CheckCircle2,
   Send, Inbox, User, CreditCard, ShieldAlert,
   MessageCircle, Loader2, BadgeCheck, AlertCircle,
-  ArrowRight, Zap
+  ArrowRight, Zap, ShieldCheck, Lock, Banknote
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db, auth } from "@/lib/firebase";
@@ -189,6 +189,106 @@ function OfferCard({
   );
 }
 
+// ─── Payment Modal ────────────────────────────────────────────────────────────
+function PaymentModal({
+  offer, booking, onClose, onConfirm, processing,
+}: {
+  offer: Offer; booking: Booking; onClose: () => void;
+  onConfirm: (method: string) => Promise<void>; processing: boolean;
+}) {
+  const [method, setMethod] = useState<"card" | "transfer" | "ussd">("card");
+  const methods = [
+    { id: "card" as const,     label: "Debit / Credit Card",  sub: "Visa, Mastercard, Verve",  icon: <CreditCard className="w-5 h-5" /> },
+    { id: "transfer" as const, label: "Bank Transfer",         sub: "Instant transfer via NIP",  icon: <Banknote className="w-5 h-5" /> },
+    { id: "ussd" as const,     label: "USSD",                  sub: "*737#, *919#, *822# etc.",  icon: <Lock className="w-5 h-5" /> },
+  ];
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}>
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#0284c7] to-[#0c4a6e] p-5 text-white">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <p className="text-xs text-blue-200 mb-0.5">Secure Payment</p>
+              <h3 className="font-bold text-base">Pay to Confirm Worker</h3>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-white/20 transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="bg-white/10 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-blue-200">Total to pay</p>
+              <p className="text-2xl font-bold">₦{offer.price.toLocaleString()}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-blue-200">For</p>
+              <p className="text-sm font-semibold">{booking.service || booking.category || "Service"}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
+          {/* Worker summary */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#0284c7] to-[#0c4a6e] rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0">
+              {offer.workerName?.[0]?.toUpperCase() || "W"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[#0c4a6e]">{offer.workerName || "Worker"}</p>
+              <p className="text-xs text-gray-400">Payment held in escrow until job is complete</p>
+            </div>
+            <ShieldCheck className="w-5 h-5 text-[#10b981] shrink-0" />
+          </div>
+          {/* Payment methods */}
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Method</p>
+            {methods.map(m => (
+              <button key={m.id} onClick={() => setMethod(m.id)}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition text-left ${method === m.id ? "border-[#0284c7] bg-[#e0f2fe]" : "border-gray-100 bg-white hover:border-gray-200"}`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${method === m.id ? "bg-[#0284c7] text-white" : "bg-gray-100 text-gray-500"}`}>
+                  {m.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-[#0c4a6e]">{m.label}</p>
+                  <p className="text-xs text-gray-400">{m.sub}</p>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${method === m.id ? "border-[#0284c7] bg-[#0284c7]" : "border-gray-300"}`}>
+                  {method === m.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                </div>
+              </button>
+            ))}
+          </div>
+          {/* Escrow notice */}
+          <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3.5 flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-[#10b981] shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-[#047857]">Protected by Escrow</p>
+              <p className="text-xs text-[#065f46] mt-0.5 leading-relaxed">
+                Your payment is held securely and only released to the worker after you confirm the job is done.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="px-5 pb-5">
+          <button onClick={() => onConfirm(method)} disabled={processing}
+            className="w-full bg-[#0284c7] text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#0369a1] transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-md">
+            {processing
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing Payment…</>
+              : <><ShieldCheck className="w-4 h-4" /> Pay \u20a6{offer.price.toLocaleString()} Securely</>
+            }
+          </button>
+          <p className="text-center text-[10px] text-gray-400 mt-2">🔒 Secured with 256-bit SSL encryption</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Booking Detail Modal ───────────────────────────────────────────────────────
 function BookingModal({
   booking,
@@ -203,6 +303,9 @@ function BookingModal({
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
   const [accepting, setAccepting] = useState<string | null>(null);
+  // Payment gate state
+  const [payOffer, setPayOffer] = useState<Offer | null>(null);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "offers"), where("jobId", "==", booking.id));
@@ -238,62 +341,86 @@ function BookingModal({
 
   const pendingOffers = offers.filter(o => o.status === "pending");
 
-  const handleAccept = async (offer: Offer) => {
-    setAccepting(offer.id);
+  // Step 1 — client clicks Accept → open payment modal
+  const handleAccept = (offer: Offer) => {
+    setPayOffer(offer);
+  };
+
+  // Step 2 — client pays → then confirm everything
+  const handlePaymentConfirm = async (paymentMethod: string) => {
+    if (!payOffer) return;
+    setProcessing(true);
     try {
       const user = auth.currentUser!;
 
-      // 1. Accept this offer
-      await updateDoc(doc(db, "offers", offer.id), {
-        status: "accepted",
+      // 1. Create escrow payment record
+      await addDoc(collection(db, "payments"), {
+        jobId:         booking.id,
+        clientId:      user.uid,
+        workerId:      payOffer.workerId,
+        offerId:       payOffer.id,
+        amount:        payOffer.price,
+        service:       booking.service || booking.category || "Service",
+        workerName:    payOffer.workerName || "",
+        paymentMethod,
+        status:        "escrow",
+        refundStatus:  "none",
+        createdAt:     serverTimestamp(),
+      });
+
+      // 2. Accept this offer
+      await updateDoc(doc(db, "offers", payOffer.id), {
+        status:     "accepted",
         acceptedAt: serverTimestamp(),
       });
 
-      // 2. Reject all other pending offers
-      const others = offers.filter(o => o.id !== offer.id && o.status === "pending");
+      // 3. Reject all other pending offers
+      const others = offers.filter(o => o.id !== payOffer.id && o.status === "pending");
       await Promise.all(others.map(o =>
         updateDoc(doc(db, "offers", o.id), { status: "rejected" })
       ));
 
-      // 3. Update the job with the assigned worker
+      // 4. Update the job — mark in-progress with worker assigned
       await updateDoc(doc(db, "jobs", booking.id), {
-        workerId:   offer.workerId,
-        workerName: offer.workerName || "",
-        amount:     offer.price,
-        status:     "in-progress",
-        startedAt:  serverTimestamp(),
+        workerId:      payOffer.workerId,
+        workerName:    payOffer.workerName || "",
+        amount:        payOffer.price,
+        status:        "in-progress",
+        paymentStatus: "paid",
+        startedAt:     serverTimestamp(),
       });
 
-      // 4. Notify the worker their offer was accepted
+      // 5. Notify worker — offer accepted + payment received
       await addDoc(collection(db, "notifications"), {
-        userId:    offer.workerId,
+        userId:    payOffer.workerId,
         type:      "booking",
-        title:     "Your offer was accepted! 🎉",
-        body:      `Your offer of ₦${offer.price.toLocaleString()} for "${booking.service || booking.category || "a service"}" was accepted. Head to My Jobs to get started.`,
-        link:      `/worker/my-jobs`,
+        title:     "Offer accepted & payment received! 🎉",
+        body:      `Your offer of ₦${payOffer.price.toLocaleString()} for "${booking.service || booking.category || "a service"}" was accepted and paid. Head to My Jobs to get started.`,
+        link:      "/worker/my-jobs",
         read:      false,
         createdAt: serverTimestamp(),
       });
 
-      // 5. Notify client
+      // 6. Notify client — payment confirmed
       await addDoc(collection(db, "notifications"), {
         userId:    user.uid,
         type:      "booking",
-        title:     "Worker confirmed",
-        body:      `${offer.workerName || "Your worker"} has been confirmed for the job. You can now message them directly.`,
-        link:      `/client/messages?worker=${offer.workerId}`,
+        title:     "Payment successful",
+        body:      `Payment of ₦${payOffer.price.toLocaleString()} held in escrow. ${payOffer.workerName || "Your worker"} has been confirmed.`,
+        link:      `/client/bookings?booking=${booking.id}`,
         read:      false,
         createdAt: serverTimestamp(),
       });
 
-      toast.success(`Offer accepted! ${offer.workerName || "The worker"} will be in touch soon.`, {
+      setPayOffer(null);
+      toast.success(`Payment successful! ${payOffer.workerName || "The worker"} has been confirmed.`, {
         iconTheme: { primary: "#10b981", secondary: "#fff" },
         duration: 5000,
       });
     } catch {
-      toast.error("Failed to accept offer. Please try again.");
+      toast.error("Payment failed. Please try again.");
     } finally {
-      setAccepting(null);
+      setProcessing(false);
     }
   };
 
@@ -310,6 +437,7 @@ function BookingModal({
   };
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
@@ -454,6 +582,20 @@ function BookingModal({
         </div>
       </motion.div>
     </motion.div>
+
+    {/* Payment modal — rendered above booking modal */}
+    <AnimatePresence>
+      {payOffer && (
+        <PaymentModal
+          offer={payOffer}
+          booking={booking}
+          onClose={() => setPayOffer(null)}
+          onConfirm={handlePaymentConfirm}
+          processing={processing}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 

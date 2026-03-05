@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldAlert, Plus, X, Upload, Clock, CheckCircle2, Eye, Scale, Loader2, Menu, Image as ImageIcon, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -78,7 +78,7 @@ function DetailModal({ dispute, onClose }: { dispute: Dispute; onClose: () => vo
   );
 }
 
-export default function WorkerDisputesPage() {
+function WorkerDisputesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -165,5 +165,20 @@ export default function WorkerDisputesPage() {
         {selectedDispute && <DetailModal dispute={selectedDispute} onClose={() => setSelectedDispute(null)} />}
       </AnimatePresence>
     </div>
+  );
+}
+// ─── Suspense wrapper (required for useSearchParams in Next.js) ───────────────
+export default function WorkerDisputesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-[#0284c7] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400 font-medium">Loading…</p>
+        </div>
+      </div>
+    }>
+      <WorkerDisputesPageInner />
+    </Suspense>
   );
 }
