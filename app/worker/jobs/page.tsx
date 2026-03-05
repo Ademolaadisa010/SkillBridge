@@ -5,32 +5,33 @@ import { useRouter } from "next/navigation";
 import {
   Inbox, MapPin, Send, X, Menu, Search, Calendar,
   Image as ImageIcon, Loader2, Zap, CheckCircle2,
-  Clock, XCircle, MessageCircle
+  Clock, XCircle, MessageCircle, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db, auth } from "@/lib/firebase";
 import {
   collection, query, where, onSnapshot, addDoc,
-  serverTimestamp, doc, getDoc
+  serverTimestamp, doc, getDoc, getDocs, orderBy, limit
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import WorkerSidebar from "@/components/sidebar/WorkerSidebar";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface JobRequest {
   id: string;
   clientId?: string;
   clientName?: string;
   service?: string;
   category?: string;
-  description: string;
-  address: string;
-  date: string;
+  description?: string;
+  address?: string;
+  date?: string;
   urgency?: string;
   imageCount?: number;
-  status: string;
+  status?: string;
+  workerId?: string;
   createdAt?: { seconds: number };
 }
 
@@ -48,48 +49,48 @@ interface MyOffer {
   createdAt?: { seconds: number };
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const CAT_COLOR: Record<string, string> = {
-  plumbing: "bg-blue-100 text-blue-700",
-  electrical: "bg-yellow-100 text-yellow-700",
-  carpentry: "bg-orange-100 text-orange-700",
-  painting: "bg-green-100 text-green-700",
-  mechanics: "bg-red-100 text-red-700",
-  other: "bg-gray-100 text-gray-600",
+  plumbing:        "bg-blue-100 text-blue-700",
+  electrical:      "bg-yellow-100 text-yellow-700",
+  carpentry:       "bg-orange-100 text-orange-700",
+  painting:        "bg-green-100 text-green-700",
+  mechanics:       "bg-red-100 text-red-700",
+  "ac-technician": "bg-cyan-100 text-cyan-700",
+  cleaning:        "bg-purple-100 text-purple-700",
+  other:           "bg-gray-100 text-gray-600",
 };
 
 function timeAgo(s?: number) {
   if (!s) return "";
   const d = Date.now() - s * 1000;
-  if (d < 3600000) return `${Math.floor(d / 60000)}m ago`;
+  if (d < 3600000)  return `${Math.floor(d / 60000)}m ago`;
   if (d < 86400000) return `${Math.floor(d / 3600000)}h ago`;
   return `${Math.floor(d / 86400000)}d ago`;
 }
 
-// ─── Offer Status Badge ─────────────────────────────────────────────────────────
 function OfferBadge({ status }: { status: MyOffer["status"] }) {
-  const map = {
-    pending:  { cls: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="w-3 h-3" />,        label: "Pending" },
-    accepted: { cls: "bg-green-100 text-[#10b981] border-green-200",   icon: <CheckCircle2 className="w-3 h-3" />, label: "Accepted!" },
+  const cfg = {
+    pending:  { cls: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="w-3 h-3" />,        label: "Pending"  },
+    accepted: { cls: "bg-green-100 text-[#10b981] border-green-200",   icon: <CheckCircle2 className="w-3 h-3" />, label: "Accepted" },
     rejected: { cls: "bg-gray-100 text-gray-500 border-gray-200",      icon: <XCircle className="w-3 h-3" />,      label: "Declined" },
-  };
-  const { cls, icon, label } = map[status];
+  }[status];
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${cls}`}>
-      {icon}{label}
+    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${cfg.cls}`}>
+      {cfg.icon}{cfg.label}
     </span>
   );
 }
 
-// ─── Send Offer Modal ───────────────────────────────────────────────────────────
+// ─── Offer Modal ──────────────────────────────────────────────────────────────
 function OfferModal({ job, onClose, onSubmit }: {
   job: JobRequest;
   onClose: () => void;
   onSubmit: (price: number, msg: string) => Promise<void>;
 }) {
-  const [price, setPrice] = useState("");
+  const [price, setPrice]   = useState("");
   const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSub] = useState(false);
   const ok = price && Number(price) > 0 && message.length >= 20;
 
   return (
@@ -110,11 +111,11 @@ function OfferModal({ job, onClose, onSubmit }: {
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <div className="bg-gray-50 rounded-xl p-3.5">
-            <p className="text-xs text-gray-500 line-clamp-3">{job.description}</p>
-            <div className="flex gap-4 mt-2 text-xs text-gray-400">
-              <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.address}</span>
-              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{job.date}</span>
+          <div className="bg-gray-50 rounded-xl p-3.5 space-y-1.5">
+            <p className="text-xs text-gray-500 line-clamp-3">{job.description || "No description provided."}</p>
+            <div className="flex flex-wrap gap-3 text-xs text-gray-400 pt-1">
+              {job.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.address}</span>}
+              {job.date    && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{job.date}</span>}
             </div>
           </div>
           <div className="space-y-1.5">
@@ -136,7 +137,7 @@ function OfferModal({ job, onClose, onSubmit }: {
           </div>
         </div>
         <div className="px-5 pb-5">
-          <button onClick={async () => { setSubmitting(true); await onSubmit(Number(price), message); setSubmitting(false); }}
+          <button onClick={async () => { setSub(true); await onSubmit(Number(price), message); setSub(false); }}
             disabled={!ok || submitting}
             className="w-full bg-[#10b981] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#059669] transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-md">
             {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</> : <><Send className="w-4 h-4" /> Send Offer</>}
@@ -147,29 +148,43 @@ function OfferModal({ job, onClose, onSubmit }: {
   );
 }
 
-// ─── My Offer Card ──────────────────────────────────────────────────────────────
+// ─── My Offer Card ────────────────────────────────────────────────────────────
 function MyOfferCard({ offer }: { offer: MyOffer }) {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border-2 p-4 transition ${
-        offer.status === "accepted" ? "border-[#10b981] bg-[#f0fdf4]"
-        : offer.status === "rejected" ? "border-gray-100 bg-gray-50"
-        : "border-gray-100 bg-white"
+      className={`rounded-2xl border-2 overflow-hidden transition ${
+        offer.status === "accepted" ? "border-[#10b981]"
+        : offer.status === "rejected" ? "border-gray-100 opacity-70"
+        : "border-gray-100 hover:shadow-md"
       }`}>
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-[#0c4a6e] truncate">{offer.service || "Service Job"}</p>
-          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 flex-wrap">
-            {offer.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-gray-300" />{offer.address}</span>}
-            {offer.date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-300" />{offer.date}</span>}
-            <span>{timeAgo(offer.createdAt?.seconds)}</span>
-          </div>
-        </div>
-        <OfferBadge status={offer.status} />
-      </div>
 
-      {/* Price + client */}
-      <div className="bg-gray-50 rounded-xl px-4 py-3 mb-3 flex items-center justify-between">
+      {/* Green accepted banner */}
+      {offer.status === "accepted" && (
+        <div className="bg-[#10b981] px-4 py-2.5 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+          <p className="text-xs font-bold text-white">Client accepted your offer — go to My Jobs to get started!</p>
+        </div>
+      )}
+
+      <div className={`p-4 ${offer.status === "accepted" ? "bg-[#f0fdf4]" : offer.status === "rejected" ? "bg-gray-50" : "bg-white"}`}>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold ${CAT_COLOR[(offer as any).category || "other"]}`}>
+              {((offer as any).category || offer.service || "S")[0].toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[#0c4a6e] truncate">{offer.service || "Service Job"}</p>
+              <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400 flex-wrap">
+                {offer.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-gray-300" />{offer.address}</span>}
+                {offer.date    && <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-300" />{offer.date}</span>}
+                <span>{timeAgo(offer.createdAt?.seconds)}</span>
+              </div>
+            </div>
+          </div>
+          <OfferBadge status={offer.status} />
+        </div>
+
+      <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 mb-3 flex items-center justify-between">
         <div>
           <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-0.5">Your Offer</p>
           <p className="text-lg font-bold text-[#0c4a6e]">₦{offer.price.toLocaleString()}</p>
@@ -182,16 +197,9 @@ function MyOfferCard({ offer }: { offer: MyOffer }) {
         )}
       </div>
 
-      <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3 italic">"{offer.message}"</p>
+      <p className="text-xs text-gray-500 line-clamp-2 mb-3 italic">"{offer.message}"</p>
 
       {offer.status === "accepted" && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 bg-[#dcfce7] border border-green-200 rounded-xl px-3 py-2.5">
-            <CheckCircle2 className="w-4 h-4 text-[#10b981] shrink-0" />
-            <p className="text-xs text-[#047857] font-semibold">
-              Client accepted your offer! Go to My Jobs to get started.
-            </p>
-          </div>
           <div className="flex gap-2">
             <Link href="/worker/my-jobs"
               className="flex-1 bg-[#10b981] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#059669] transition flex items-center justify-center gap-2 shadow-sm">
@@ -199,89 +207,102 @@ function MyOfferCard({ offer }: { offer: MyOffer }) {
             </Link>
             {offer.clientId && (
               <Link href={`/worker/messages?client=${offer.clientId}`}
-                className="w-10 h-10 bg-[#f0fdf4] text-[#10b981] rounded-xl flex items-center justify-center hover:bg-[#dcfce7] transition shrink-0"
+                className="w-10 h-10 bg-[#dcfce7] text-[#10b981] rounded-xl flex items-center justify-center hover:bg-[#bbf7d0] transition shrink-0"
                 title="Message client">
                 <MessageCircle className="w-4 h-4" />
               </Link>
             )}
           </div>
-        </div>
       )}
-
       {offer.status === "pending" && (
         <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-100 rounded-xl px-3 py-2.5">
           <Clock className="w-4 h-4 text-yellow-500 shrink-0" />
           <p className="text-xs text-yellow-700 font-medium">Awaiting client review. You'll be notified when they respond.</p>
         </div>
       )}
-
       {offer.status === "rejected" && (
         <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
           <XCircle className="w-4 h-4 text-gray-400 shrink-0" />
-          <p className="text-xs text-gray-500">Client chose a different worker. Keep sending offers!</p>
+          <p className="text-xs text-gray-500">Client chose a different worker. Keep applying!</p>
         </div>
       )}
+      </div>
+      <div className={`h-0.5 ${
+        offer.status === "accepted" ? "bg-[#10b981]"
+        : offer.status === "rejected" ? "bg-gray-100"
+        : "bg-yellow-300"
+      }`} />
     </motion.div>
   );
 }
 
-// ─── Main Page ──────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function JobRequestsPage() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"browse" | "my-offers">("browse");
+  const [activeTab, setActiveTab]   = useState<"browse" | "my-offers">("browse");
 
-  // Browse state
-  const [jobs, setJobs] = useState<JobRequest[]>([]);
+  // Browse
+  const [jobs, setJobs]               = useState<JobRequest[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState("all");
+  const [search, setSearch]           = useState("");
+  const [filterCat, setFilterCat]     = useState("all");
   const [filterUrgency, setFilterUrgency] = useState("all");
-  const [selected, setSelected] = useState<JobRequest | null>(null);
-  const [userId, setUserId] = useState("");
+  const [selected, setSelected]       = useState<JobRequest | null>(null);
+  const [userId, setUserId]           = useState("");
   const [alreadyApplied, setAlreadyApplied] = useState<Set<string>>(new Set());
-
-  // My Offers state
-  const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
+  // My Offers
+  const [myOffers, setMyOffers]           = useState<MyOffer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
-  const [offerFilter, setOfferFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
+  const [offerFilter, setOfferFilter]     = useState<"all" | "pending" | "accepted" | "rejected">("all");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, user => {
       if (!user) { router.push("/login"); return; }
       setUserId(user.uid);
 
-      // All pending jobs (excluding own)
-      const jobQ = query(collection(db, "jobs"), where("status", "==", "pending"));
+      // ─────────────────────────────────────────────────────────────────────
+      // KEY FIX: Fetch ALL jobs from Firestore (no status filter).
+      // Then filter client-side to only show jobs that:
+      //   1. Were NOT posted by this worker (not their own jobs as a client)
+      //   2. Do NOT have a workerId assigned yet (still open)
+      //   3. Have status "pending" OR no status at all (catches all variants)
+      // This handles cases where the client's Book Service wizard saves the
+      // job with status="pending", status="open", or without a status field.
+      // ─────────────────────────────────────────────────────────────────────
+      const jobQ = query(
+        collection(db, "jobs"),
+        orderBy("createdAt", "desc"),
+        limit(100)
+      );
+
       const unsubJobs = onSnapshot(jobQ, snap => {
-        const data = snap.docs
-          .map(d => ({ id: d.id, ...d.data() } as JobRequest))
-          .filter(j => j.clientId !== user.uid);
-        data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        setJobs(data);
+        const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as JobRequest));
+        const open = all.filter(j =>
+          !j.workerId &&
+          (!j.status || j.status === "pending" || j.status === "open" || j.status === "active")
+        );
+        setJobs(open);
         setLoadingJobs(false);
       });
 
-      // This worker's offers — enrich with job details
+      // Worker's own sent offers — enriched with job details
       const offerQ = query(collection(db, "offers"), where("workerId", "==", user.uid));
       const unsubOffers = onSnapshot(offerQ, async snap => {
         const raw = snap.docs.map(d => ({ id: d.id, ...d.data() } as MyOffer));
-
-        // Track which jobs this worker already applied to
         setAlreadyApplied(new Set(raw.map(o => o.jobId)));
 
-        // Fetch job details for each offer
         const enriched = await Promise.all(
           raw.map(async offer => {
             try {
-              const jobSnap = await getDoc(doc(db, "jobs", offer.jobId));
-              if (jobSnap.exists()) {
-                const j = jobSnap.data();
+              const jSnap = await getDoc(doc(db, "jobs", offer.jobId));
+              if (jSnap.exists()) {
+                const j = jSnap.data();
                 return {
                   ...offer,
-                  service:    j.service || j.category || "Service Job",
-                  address:    j.address || "",
-                  date:       j.date || "",
+                  service:    j.service    || j.category || "Service Job",
+                  address:    j.address    || "",
+                  date:       j.date       || "",
                   clientName: j.clientName || "",
                   clientId:   offer.clientId || j.clientId,
                 };
@@ -304,6 +325,7 @@ export default function JobRequestsPage() {
   const handleOffer = async (price: number, message: string) => {
     if (!selected) return;
     try {
+      const user = auth.currentUser!;
       await addDoc(collection(db, "offers"), {
         jobId:      selected.id,
         workerId:   userId,
@@ -311,18 +333,17 @@ export default function JobRequestsPage() {
         price,
         message,
         status:     "pending",
-        workerName: auth.currentUser?.displayName || "A worker",
+        workerName: user.displayName || "A worker",
         service:    selected.service || selected.category || "Service",
         createdAt:  serverTimestamp(),
       });
 
-      // Notify client
       if (selected.clientId) {
         await addDoc(collection(db, "notifications"), {
           userId:    selected.clientId,
           type:      "booking",
           title:     "New offer on your request",
-          body:      `${auth.currentUser?.displayName || "A worker"} sent an offer of ₦${price.toLocaleString()} for "${selected.service || selected.category || "your request"}"`,
+          body:      `${user.displayName || "A worker"} sent an offer of ₦${price.toLocaleString()} for "${selected.service || selected.category || "your request"}"`,
           link:      `/client/bookings?booking=${selected.id}&tab=offers`,
           read:      false,
           createdAt: serverTimestamp(),
@@ -333,19 +354,19 @@ export default function JobRequestsPage() {
         iconTheme: { primary: "#10b981", secondary: "#fff" },
       });
       setSelected(null);
-      setActiveTab("my-offers"); // Auto-switch so worker sees their offer
+      setActiveTab("my-offers");
     } catch {
       toast.error("Failed to send offer. Please try again.");
     }
   };
 
   const categories = ["all", ...Array.from(new Set(jobs.map(j => j.category || "other")))];
-  const filtered = jobs.filter(j => {
+  const filteredJobs = jobs.filter(j => {
     const s = search.toLowerCase();
     return (
       (!search || [j.service, j.category, j.description, j.address].some(f => f?.toLowerCase().includes(s))) &&
-      (filterCat === "all" || j.category === filterCat) &&
-      (filterUrgency === "all" || j.urgency === filterUrgency)
+      (filterCat     === "all" || j.category === filterCat) &&
+      (filterUrgency === "all" || j.urgency  === filterUrgency)
     );
   });
 
@@ -381,7 +402,6 @@ export default function JobRequestsPage() {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-4xl mx-auto space-y-6">
 
-            {/* Header */}
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-xl font-bold text-[#0c4a6e]">Job Requests</h1>
@@ -391,12 +411,12 @@ export default function JobRequestsPage() {
                 <Link href="/worker/my-jobs"
                   className="inline-flex items-center gap-2 bg-[#10b981] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#059669] transition shadow-sm">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  {offerCounts.accepted} accepted job{offerCounts.accepted > 1 ? "s" : ""}
+                  {offerCounts.accepted} accepted <ChevronRight className="w-3 h-3" />
                 </Link>
               )}
             </div>
 
-            {/* Main tabs */}
+            {/* Tabs */}
             <div className="flex gap-1 bg-white rounded-2xl border border-gray-100 shadow-sm p-1.5">
               <button onClick={() => setActiveTab("browse")}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition ${activeTab === "browse" ? "bg-[#10b981] text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}>
@@ -414,19 +434,17 @@ export default function JobRequestsPage() {
                 My Offers
                 {myOffers.length > 0 && (
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeTab === "my-offers" ? "bg-white/20 text-white"
-                    : offerCounts.accepted > 0 ? "bg-[#10b981] text-white"
+                    activeTab === "my-offers"    ? "bg-white/20 text-white"
+                    : offerCounts.accepted > 0  ? "bg-[#10b981] text-white"
                     : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {myOffers.length}
-                  </span>
+                  }`}>{myOffers.length}</span>
                 )}
               </button>
             </div>
 
-            {/* ── BROWSE TAB ── */}
+            {/* ══════ BROWSE TAB ══════ */}
             {activeTab === "browse" && (
-              <>
+              <div className="space-y-5">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -465,10 +483,10 @@ export default function JobRequestsPage() {
                       </div>
                     ))}
                   </div>
-                ) : filtered.length > 0 ? (
+                ) : filteredJobs.length > 0 ? (
                   <div className="space-y-4">
                     <AnimatePresence>
-                      {filtered.map(job => {
+                      {filteredJobs.map(job => {
                         const applied = alreadyApplied.has(job.id);
                         return (
                           <motion.div key={job.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -476,8 +494,8 @@ export default function JobRequestsPage() {
                             <div className="p-5">
                               <div className="flex items-start justify-between gap-3 mb-3">
                                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm shrink-0 ${CAT_COLOR[job.category || "other"]}`}>
-                                    <i className="fas fa-tools" />
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm shrink-0 font-bold ${CAT_COLOR[job.category || "other"]}`}>
+                                    {(job.category || "?")[0].toUpperCase()}
                                   </div>
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -493,15 +511,15 @@ export default function JobRequestsPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-gray-500 line-clamp-2">{job.description}</p>
+                                    <p className="text-xs text-gray-500 line-clamp-2">{job.description || "No description provided."}</p>
                                   </div>
                                 </div>
                                 <span className="text-[10px] text-gray-400 shrink-0">{timeAgo(job.createdAt?.seconds)}</span>
                               </div>
 
                               <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-4">
-                                <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-gray-300" />{job.address}</span>
-                                <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-300" />{job.date}</span>
+                                {job.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-gray-300" />{job.address}</span>}
+                                {job.date    && <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-gray-300" />{job.date}</span>}
                                 {(job.imageCount || 0) > 0 && (
                                   <span className="flex items-center gap-1">
                                     <ImageIcon className="w-3 h-3 text-gray-300" />
@@ -514,7 +532,7 @@ export default function JobRequestsPage() {
                                 <span className="text-xs text-gray-400">{job.clientName || "Client"}</span>
                                 {applied ? (
                                   <button onClick={() => setActiveTab("my-offers")}
-                                    className="flex items-center gap-2 bg-[#dcfce7] text-[#10b981] px-4 py-2 rounded-xl text-xs font-bold transition hover:bg-[#bbf7d0]">
+                                    className="flex items-center gap-2 bg-[#dcfce7] text-[#10b981] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#bbf7d0] transition">
                                     <CheckCircle2 className="w-3.5 h-3.5" /> View Your Offer
                                   </button>
                                 ) : (
@@ -525,7 +543,11 @@ export default function JobRequestsPage() {
                                 )}
                               </div>
                             </div>
-                            <div className={`h-0.5 ${job.urgency === "urgent" ? "bg-orange-400" : applied ? "bg-[#10b981]" : "bg-[#10b981]/30"}`} />
+                            <div className={`h-0.5 ${
+                              job.urgency === "urgent" ? "bg-orange-400"
+                              : applied ? "bg-[#10b981]"
+                              : "bg-[#10b981]/30"
+                            }`} />
                           </motion.div>
                         );
                       })}
@@ -535,22 +557,21 @@ export default function JobRequestsPage() {
                   <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
                     <Inbox className="w-12 h-12 text-gray-200 mx-auto mb-4" />
                     <h3 className="text-base font-bold text-gray-400 mb-1">No job requests found</h3>
-                    <p className="text-sm text-gray-300">New requests are posted regularly. Check back soon.</p>
+                    <p className="text-sm text-gray-300">New requests are posted regularly — check back soon.</p>
                   </div>
                 )}
-              </>
+              </div>
             )}
 
-            {/* ── MY OFFERS TAB ── */}
+            {/* ══════ MY OFFERS TAB ══════ */}
             {activeTab === "my-offers" && (
-              <>
-                {/* Summary stats */}
+              <div className="space-y-5">
                 {myOffers.length > 0 && (
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { label: "Pending",  count: offerCounts.pending,  cls: "bg-yellow-50 border-yellow-100 text-yellow-700" },
-                      { label: "Accepted", count: offerCounts.accepted, cls: "bg-[#f0fdf4] border-green-200 text-[#10b981]" },
-                      { label: "Declined", count: offerCounts.rejected, cls: "bg-gray-50 border-gray-200 text-gray-500" },
+                      { label: "Pending",  count: offerCounts.pending,  cls: "bg-yellow-50 border-yellow-200 text-yellow-700" },
+                      { label: "Accepted", count: offerCounts.accepted, cls: "bg-[#f0fdf4] border-green-200 text-[#10b981]"   },
+                      { label: "Declined", count: offerCounts.rejected, cls: "bg-gray-50 border-gray-200 text-gray-500"        },
                     ].map(s => (
                       <div key={s.label} className={`border-2 rounded-2xl p-3 text-center ${s.cls}`}>
                         <p className="text-2xl font-bold">{s.count}</p>
@@ -560,7 +581,6 @@ export default function JobRequestsPage() {
                   </div>
                 )}
 
-                {/* Filter pills */}
                 {myOffers.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {(["all", "pending", "accepted", "rejected"] as const).map(f => (
@@ -577,7 +597,6 @@ export default function JobRequestsPage() {
                   </div>
                 )}
 
-                {/* Offers list */}
                 {loadingOffers ? (
                   <div className="space-y-4">
                     {[...Array(3)].map((_, i) => (
@@ -600,9 +619,7 @@ export default function JobRequestsPage() {
                     <h3 className="text-base font-bold text-gray-400 mb-1">
                       {myOffers.length > 0 ? `No ${offerFilter === "rejected" ? "declined" : offerFilter} offers` : "No offers sent yet"}
                     </h3>
-                    <p className="text-sm text-gray-300 mb-5">
-                      {myOffers.length > 0 ? "Try a different filter above" : "Browse open jobs and send your first offer to get hired"}
-                    </p>
+                    <p className="text-sm text-gray-300 mb-5">Browse open jobs and send your first offer to get hired</p>
                     {myOffers.length === 0 && (
                       <button onClick={() => setActiveTab("browse")}
                         className="inline-flex items-center gap-2 bg-[#10b981] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#059669] transition">
@@ -611,8 +628,9 @@ export default function JobRequestsPage() {
                     )}
                   </div>
                 )}
-              </>
+              </div>
             )}
+
           </div>
         </main>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -458,7 +458,7 @@ function BookingModal({
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────────────────
-export default function MyBookingsPage() {
+function MyBookingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -682,5 +682,20 @@ export default function MyBookingsPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+// ─── Suspense Wrapper (required for useSearchParams in Next.js) ────────────────
+export default function MyBookingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-[#0284c7] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400 font-medium">Loading bookings…</p>
+        </div>
+      </div>
+    }>
+      <MyBookingsPageInner />
+    </Suspense>
   );
 }
