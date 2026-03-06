@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import toast, { Toaster } from "react-hot-toast";
 import { Mail, Lock, ArrowLeft, CheckCircle2, RefreshCw } from "lucide-react";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function getFriendlyError(err: any): string {
   const code = err?.code || "";
   if (code === "auth/user-not-found" || code === "auth/invalid-credential")
@@ -14,7 +14,7 @@ function getFriendlyError(err: any): string {
   if (code === "auth/invalid-email")
     return "Please enter a valid email address.";
   if (code === "auth/too-many-requests")
-    return "Too many attempts. Please wait a moment before trying again.";
+    return "Too many attempts. Please wait a few minutes before trying again.";
   if (code === "auth/network-request-failed")
     return "Network error. Please check your internet connection.";
   return "Something went wrong. Please try again.";
@@ -22,13 +22,9 @@ function getFriendlyError(err: any): string {
 
 const errStyle = {
   duration: 5000,
-  style: {
-    borderRadius: "10px", background: "#fff", color: "#1e293b",
-    border: "1px solid #fecaca", boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-  },
+  style: { borderRadius: "10px", background: "#fff", color: "#1e293b", border: "1px solid #fecaca", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" },
   iconTheme: { primary: "#ef4444", secondary: "#fff" },
 };
-
 const okStyle = {
   style: { border: "1px solid #a7f3d0", background: "#fff", color: "#264653" },
   iconTheme: { primary: "#10b981", secondary: "#fff" },
@@ -36,56 +32,32 @@ const okStyle = {
 
 type Step = "input" | "sent";
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function ForgotPassword() {
-  const [email, setEmail]   = useState("");
-  const [loading, setLoading] = useState(false);
-  const [step, setStep]     = useState<Step>("input");
+  const [email, setEmail]         = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [step, setStep]           = useState<Step>("input");
   const [countdown, setCountdown] = useState(0);
 
-  // ── Send via EmailJS API route (with Firebase Admin link) ──────────────────
-  const sendResetEmail = async (targetEmail: string) => {
-    // 1. Try our branded EmailJS route first
-    try {
-      const res = await fetch("/api/send-password-reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email:       targetEmail,
-          continueUrl: `${window.location.origin}/login?reset=true`,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // If user not found, surface the error
-        if (data?.error === "user-not-found") {
-          throw Object.assign(new Error(), { code: "auth/user-not-found" });
-        }
-        throw new Error(data?.error || "API failed");
-      }
-
-      return; // success — email sent via EmailJS
-    } catch (err: any) {
-      // Re-throw known Firebase-style errors
-      if (err?.code?.startsWith("auth/")) throw err;
-
-      // Fallback: use Firebase's own sendPasswordResetEmail
-      const { sendPasswordResetEmail } = await import("firebase/auth");
-      await sendPasswordResetEmail(auth, targetEmail, {
-        url: `${window.location.origin}/login?reset=true`,
-      });
-    }
+  const startCountdown = () => {
+    setCountdown(60);
+    const interval = setInterval(() => {
+      setCountdown(c => { if (c <= 1) { clearInterval(interval); return 0; } return c - 1; });
+    }, 1000);
   };
 
-  // ── Handle initial submit ───────────────────────────────────────────────────
+  const sendReset = async (targetEmail: string) => {
+    await sendPasswordResetEmail(auth, targetEmail, {
+      url: `${window.location.origin}/login?reset=true`,
+      handleCodeInApp: false,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const t = toast.loading("Sending reset link…");
     try {
-      await sendResetEmail(email);
+      await sendReset(email);
       toast.dismiss(t);
       toast.success("Reset link sent! Check your inbox.", okStyle);
       setStep("sent");
@@ -98,13 +70,12 @@ export default function ForgotPassword() {
     }
   };
 
-  // ── Handle resend ───────────────────────────────────────────────────────────
   const handleResend = async () => {
     if (countdown > 0 || loading) return;
     setLoading(true);
     const t = toast.loading("Resending reset link…");
     try {
-      await sendResetEmail(email);
+      await sendReset(email);
       toast.dismiss(t);
       toast.success("Reset link resent! Check your inbox.", okStyle);
       startCountdown();
@@ -116,33 +87,15 @@ export default function ForgotPassword() {
     }
   };
 
-  // ── 60s resend cooldown ─────────────────────────────────────────────────────
-  const startCountdown = () => {
-    setCountdown(60);
-    const interval = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { clearInterval(interval); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-  };
-
   return (
     <>
       <Toaster position="top-center" toastOptions={{ style: { fontFamily: "inherit", fontSize: "14px" } }} />
-
       <div className="min-h-screen bg-gradient-to-br from-[#f0f9ff] via-white to-[#e0f2fe] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-
-          {/* Card */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-
-            {/* Top accent bar */}
             <div className="h-1.5 bg-gradient-to-r from-[#0284c7] to-[#0c4a6e]" />
-
             <div className="p-8">
 
-              {/* Logo */}
               <div className="flex items-center justify-center gap-2 mb-8">
                 <div className="w-8 h-8 bg-[#0284c7] rounded-lg flex items-center justify-center">
                   <span className="text-white font-black text-sm">SB</span>
@@ -150,7 +103,6 @@ export default function ForgotPassword() {
                 <span className="text-lg font-bold text-[#0c4a6e]">SkillBridge</span>
               </div>
 
-              {/* ── STEP 1: Email input ── */}
               {step === "input" && (
                 <>
                   <div className="text-center mb-7">
@@ -159,40 +111,26 @@ export default function ForgotPassword() {
                     </div>
                     <h1 className="text-2xl font-bold text-[#0c4a6e] mb-2">Forgot password?</h1>
                     <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
-                      No worries — enter your email and we'll send you a reset link straight to your inbox.
+                      Enter your email and we'll send you a link to reset your password.
                     </p>
                   </div>
-
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-gray-700">Email Address</label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0284c7] focus:border-[#0284c7] transition"
-                          required
-                        />
+                        <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)}
+                          className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0284c7] focus:border-[#0284c7] transition" required />
                       </div>
                     </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full flex justify-center items-center gap-2 bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold py-3.5 rounded-xl text-sm transition-all active:scale-[0.99] disabled:opacity-50 shadow-md mt-2"
-                    >
-                      {loading
-                        ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending…</>
-                        : "Send Reset Link"}
+                    <button type="submit" disabled={loading}
+                      className="w-full flex justify-center items-center gap-2 bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold py-3.5 rounded-xl text-sm transition-all active:scale-[0.99] disabled:opacity-50 shadow-md">
+                      {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending…</> : "Send Reset Link"}
                     </button>
                   </form>
                 </>
               )}
 
-              {/* ── STEP 2: Confirmation ── */}
               {step === "sent" && (
                 <>
                   <div className="text-center mb-6">
@@ -206,12 +144,11 @@ export default function ForgotPassword() {
                     </p>
                   </div>
 
-                  {/* Info card */}
-                  <div className="bg-[#f0f9ff] border border-[#bae6fd] rounded-xl p-4 mb-5">
+                  <div className="bg-[#f0f9ff] border border-[#bae6fd] rounded-xl p-4 mb-4">
                     <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">What to do next</p>
                     <div className="space-y-2.5">
                       {[
-                        { icon: "📬", text: "Open the email we sent you" },
+                        { icon: "📬", text: "Open the email from SkillBridge" },
                         { icon: "🔗", text: "Click the reset link inside" },
                         { icon: "🔑", text: "Create a strong new password" },
                         { icon: "✅", text: "Log in with your new password" },
@@ -224,40 +161,28 @@ export default function ForgotPassword() {
                     </div>
                   </div>
 
-                  {/* Spam notice */}
                   <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5">
-                    <span className="text-base">📁</span>
+                    <span className="text-base shrink-0">📁</span>
                     <p className="text-xs text-amber-700 leading-relaxed">
-                      Can't find it? Check your <strong>spam or junk folder</strong> — sometimes emails land there.
+                      Can't find it? Check your <strong>spam or junk folder</strong>. The email comes from <strong>noreply@skillbridge-1b5f9.firebaseapp.com</strong>
                     </p>
                   </div>
 
-                  {/* Resend */}
-                  <button
-                    onClick={handleResend}
-                    disabled={loading || countdown > 0}
-                    className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 disabled:opacity-50 transition mb-3"
-                  >
+                  <button onClick={handleResend} disabled={loading || countdown > 0}
+                    className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50 disabled:opacity-50 transition mb-3">
                     <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                     {loading ? "Resending…" : countdown > 0 ? `Resend in ${countdown}s` : "Resend reset email"}
                   </button>
 
-                  {/* Try different email */}
-                  <button
-                    onClick={() => { setStep("input"); setCountdown(0); }}
-                    className="w-full text-sm text-[#0284c7] font-semibold hover:underline py-2 transition"
-                  >
+                  <button onClick={() => { setStep("input"); setCountdown(0); }}
+                    className="w-full text-sm text-[#0284c7] font-semibold hover:underline py-2 transition">
                     Try a different email address
                   </button>
                 </>
               )}
 
-              {/* Back to login */}
               <div className="mt-6 pt-5 border-t border-gray-100 text-center">
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#0c4a6e] font-medium transition"
-                >
+                <Link href="/login" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#0c4a6e] font-medium transition">
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Login
                 </Link>
@@ -265,15 +190,10 @@ export default function ForgotPassword() {
 
             </div>
           </div>
-
-          {/* Bottom note */}
           <p className="text-center text-xs text-gray-400 mt-5">
             Need help?{" "}
-            <a href="mailto:support@skillbridge.ng" className="text-[#0284c7] hover:underline">
-              support@skillbridge.ng
-            </a>
+            <a href="mailto:support@skillbridge.ng" className="text-[#0284c7] hover:underline">support@skillbridge.ng</a>
           </p>
-
         </div>
       </div>
     </>
