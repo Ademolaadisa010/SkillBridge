@@ -705,8 +705,8 @@ export default function LandingPage() {
                   { label: "About Us", href: "#" },
                   { label: "Contact", href: "/contact" },
                   { label: "Help Center", href: "/help" },
-                  { label: "Terms of Service", href: "#" },
-                  { label: "Privacy Policy", href: "#" },
+                  { label: "Terms of Service", href: "/terms" },
+                  { label: "Privacy Policy", href: "/privacy" },
                 ].map((l) => (
                   <li key={l.label}>
                     <Link href={l.href} className="hover:text-[#34d399] transition">{l.label}</Link>

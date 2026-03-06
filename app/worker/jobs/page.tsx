@@ -251,6 +251,8 @@ export default function JobRequestsPage() {
   const [selected, setSelected]       = useState<JobRequest | null>(null);
   const [userId, setUserId]           = useState("");
   const [alreadyApplied, setAlreadyApplied] = useState<Set<string>>(new Set());
+  const [workerVerified, setWorkerVerified] = useState<boolean | null>(null); // null = loading
+  const [emailVerified, setEmailVerified]   = useState(false);
   // My Offers
   const [myOffers, setMyOffers]           = useState<MyOffer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
@@ -260,6 +262,17 @@ export default function JobRequestsPage() {
     const unsub = onAuthStateChanged(auth, user => {
       if (!user) { router.push("/login"); return; }
       setUserId(user.uid);
+      setEmailVerified(user.emailVerified);
+
+      // Check worker ID verification status from Firestore
+      getDoc(doc(db, "users", user.uid)).then(snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setWorkerVerified(data.verificationStatus === "approved" || data.verified === true);
+        } else {
+          setWorkerVerified(false);
+        }
+      });
 
       // ─────────────────────────────────────────────────────────────────────
       // KEY FIX: Fetch ALL jobs from Firestore (no status filter).
@@ -402,6 +415,35 @@ export default function JobRequestsPage() {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-4xl mx-auto space-y-6">
 
+            {/* ── Verification banners ─────────────────────────────────── */}
+            {!emailVerified && (
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4">
+                <span className="text-xl">✉️</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-amber-800">Email not verified</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Please check your inbox and click the verification link before you can apply for jobs.</p>
+                </div>
+              </div>
+            )}
+            {emailVerified && workerVerified === false && (
+              <div className="flex items-start gap-3 bg-orange-50 border border-orange-300 rounded-xl p-4">
+                <span className="text-xl">🪪</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-orange-800">ID verification required</p>
+                  <p className="text-xs text-orange-700 mt-0.5">You need to complete identity verification before you can send offers to clients.</p>
+                </div>
+                <Link href="/worker/verification" className="shrink-0 text-xs font-bold bg-orange-600 text-white px-3 py-1.5 rounded-lg hover:bg-orange-700 transition">
+                  Verify Now →
+                </Link>
+              </div>
+            )}
+            {emailVerified && workerVerified === true && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+                <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                <p className="text-xs font-semibold text-green-700">Your account is verified — you can apply for jobs!</p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-xl font-bold text-[#0c4a6e]">Job Requests</h1>
@@ -535,6 +577,16 @@ export default function JobRequestsPage() {
                                     className="flex items-center gap-2 bg-[#dcfce7] text-[#10b981] px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#bbf7d0] transition">
                                     <CheckCircle2 className="w-3.5 h-3.5" /> View Your Offer
                                   </button>
+                                ) : !emailVerified ? (
+                                  <Link href="/login"
+                                    className="flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-xl text-xs font-bold border border-amber-200 hover:bg-amber-200 transition">
+                                    ✉️ Verify Email First
+                                  </Link>
+                                ) : workerVerified === false ? (
+                                  <Link href="/worker/verification"
+                                    className="flex items-center gap-2 bg-orange-100 text-orange-700 px-4 py-2 rounded-xl text-xs font-bold border border-orange-200 hover:bg-orange-200 transition">
+                                    🪪 Verify ID to Apply
+                                  </Link>
                                 ) : (
                                   <button onClick={() => setSelected(job)}
                                     className="flex items-center gap-2 bg-[#10b981] text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-[#059669] transition shadow-sm">
