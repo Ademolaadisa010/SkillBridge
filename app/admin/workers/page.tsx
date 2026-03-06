@@ -34,6 +34,10 @@ interface Worker {
   bio?: string;
   idUrl?: string;
   selfieUrl?: string;
+  idFile?: string;
+  selfieFile?: string;
+  idFileName?: string;
+  selfieFileName?: string;
   walletBalance?: number;
 }
 
@@ -133,23 +137,52 @@ function WorkerModal({ worker, onClose, onAction }: {
           </div>
 
           {/* Verification docs */}
-          {(worker.idUrl || worker.selfieUrl) && (
+          {(worker.idFile || worker.selfieFile) && (
             <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Verification Docs</p>
-              <div className="flex gap-2">
-                {worker.idUrl && (
-                  <a href={worker.idUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex-1 py-2 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-[#0284c7] text-center hover:bg-blue-100 transition">
-                    View ID
-                  </a>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Verification Documents</p>
+              <div className="grid grid-cols-2 gap-3">
+                {worker.idFile && (
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5">
+                      ID — {worker.idFileName || "document"}
+                    </p>
+                    {worker.idFile.startsWith("data:image") ? (
+                      <a href={worker.idFile} target="_blank" rel="noopener noreferrer">
+                        <img src={worker.idFile} alt="ID Document"
+                          className="w-full h-32 object-cover rounded-xl border border-gray-200 hover:opacity-90 transition cursor-pointer" />
+                      </a>
+                    ) : (
+                      <a href={worker.idFile} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-center h-32 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-[#0284c7] hover:bg-blue-100 transition">
+                        📄 View PDF
+                      </a>
+                    )}
+                  </div>
                 )}
-                {worker.selfieUrl && (
-                  <a href={worker.selfieUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex-1 py-2 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-[#0284c7] text-center hover:bg-blue-100 transition">
-                    View Selfie
-                  </a>
+                {worker.selfieFile && (
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5">
+                      Selfie — {worker.selfieFileName || "photo"}
+                    </p>
+                    {worker.selfieFile.startsWith("data:image") ? (
+                      <a href={worker.selfieFile} target="_blank" rel="noopener noreferrer">
+                        <img src={worker.selfieFile} alt="Selfie with ID"
+                          className="w-full h-32 object-cover rounded-xl border border-gray-200 hover:opacity-90 transition cursor-pointer" />
+                      </a>
+                    ) : (
+                      <a href={worker.selfieFile} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-center h-32 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-[#0284c7] hover:bg-blue-100 transition">
+                        📄 View PDF
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
+            </div>
+          )}
+          {worker.verificationStatus === "pending" && !worker.idFile && !worker.selfieFile && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+              ⚠️ Worker submitted for verification but documents are not yet uploaded.
             </div>
           )}
         </div>
