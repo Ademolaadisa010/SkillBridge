@@ -7,6 +7,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  sendEmailVerification,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -85,6 +86,40 @@ export default function Login() {
     const t = toast.loading("Logging you in...");
     try {
       const cred = await signInWithEmailAndPassword(auth, emailOrPhone, password);
+
+      // Block login if email is not verified
+      if (!cred.user.emailVerified) {
+        // Send verification email BEFORE signing out while we still have the user object
+        try {
+          await sendEmailVerification(cred.user, {
+            url: `${window.location.origin}/login`,
+          });
+        } catch (verifyErr: any) {
+          // Ignore "too many requests" — email was already sent recently
+          console.log("sendEmailVerification:", verifyErr?.code);
+        }
+        await auth.signOut();
+        toast.dismiss(t);
+        toast.error(
+          (to) => (
+            <div className="flex flex-col gap-2">
+              <span className="font-bold text-sm">📧 Email not verified</span>
+              <span className="text-xs text-gray-500 leading-relaxed">
+                We just resent the verification email to <strong>{emailOrPhone}</strong>. Check your inbox and spam folder, then click the link to verify.
+              </span>
+              <button
+                onClick={() => toast.dismiss(to.id)}
+                className="mt-1 text-xs font-bold text-[#10b981] underline text-left"
+              >
+                OK, got it
+              </button>
+            </div>
+          ),
+          { duration: 15000, style: { borderRadius: "12px", background: "#fff", color: "#1e293b", border: "1px solid #fecaca", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", maxWidth: "360px" } }
+        );
+        return;
+      }
+
       const snap = await getDoc(doc(db, "users", cred.user.uid));
       if (!snap.exists()) throw new Error("User profile not found");
       toast.dismiss(t);

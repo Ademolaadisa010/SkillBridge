@@ -187,28 +187,52 @@ function WorkerModal({ worker, onClose, onAction }: {
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-100 flex flex-wrap gap-2 shrink-0">
-          {worker.verificationStatus === "pending" && (
-            <>
+        <div className="p-4 border-t border-gray-100 space-y-2 shrink-0">
+
+          {/* Show approve/reject for pending OR any worker who has uploaded docs but isn't approved yet */}
+          {(worker.verificationStatus === "pending" ||
+            ((worker.idFile || worker.selfieFile) && worker.verificationStatus !== "approved")
+          ) && (
+            <div className="flex gap-2">
               <button onClick={() => { onAction(worker.id, "approve"); onClose(); }}
-                className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition">
-                ✓ Approve
+                className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition flex items-center justify-center gap-1.5">
+                ✓ Approve Verification
               </button>
               <button onClick={() => { onAction(worker.id, "reject"); onClose(); }}
-                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition">
+                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition flex items-center justify-center gap-1.5">
                 ✗ Reject
               </button>
-            </>
+            </div>
           )}
-          <button onClick={() => { onAction(worker.id, worker.status === "suspended" ? "unsuspend" : "suspend"); onClose(); }}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition ${
-              worker.status === "suspended" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-red-100 text-red-600 hover:bg-red-200"
-            }`}>
-            {worker.status === "suspended" ? "Unsuspend" : "Suspend"}
-          </button>
-          <button onClick={onClose} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition">
-            Close
-          </button>
+
+          {/* Already approved — show revoke option */}
+          {worker.verificationStatus === "approved" && (
+            <button onClick={() => { onAction(worker.id, "reject"); onClose(); }}
+              className="w-full py-2.5 bg-orange-100 text-orange-700 rounded-xl text-sm font-bold hover:bg-orange-200 transition">
+              Revoke Verification
+            </button>
+          )}
+
+          {/* No docs uploaded yet but pending */}
+          {worker.verificationStatus === "pending" && !worker.idFile && !worker.selfieFile && (
+            <p className="text-xs text-center text-amber-600 bg-amber-50 border border-amber-200 rounded-xl py-2 px-3">
+              ⚠️ Worker submitted but hasn't uploaded documents yet
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button onClick={() => { onAction(worker.id, worker.status === "suspended" ? "unsuspend" : "suspend"); onClose(); }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition ${
+                worker.status === "suspended"
+                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                  : "bg-red-100 text-red-600 hover:bg-red-200"
+              }`}>
+              {worker.status === "suspended" ? "Unsuspend Account" : "Suspend Account"}
+            </button>
+            <button onClick={onClose} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition">
+              Close
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -267,24 +291,49 @@ export default function AdminWorkersPage() {
       await addDoc(collection(db, "notifications"), {
         userId: id, type: "verification",
         title: "Identity Verified ✅",
-        body: "Your identity has been verified. You can now receive jobs on SkillBridge.",
+        body: "Congratulations! Your identity has been verified. You can now apply for jobs on SkillBridge.",
         link: "/worker/dashboard", read: false, createdAt: serverTimestamp(),
       });
-      toast.success("Worker verified");
+      toast.success("Worker verified successfully");
+
     } else if (action === "reject") {
-      await updateDoc(ref, { verificationStatus: "rejected", updatedAt: serverTimestamp() });
+      const isRevoke = worker.verificationStatus === "approved";
+      const reason = isRevoke
+        ? "Your verification has been revoked by admin. Please contact support."
+        : prompt("Enter rejection reason (shown to worker):") || "Your documents could not be verified. Please re-submit with clear photos.";
+
+      await updateDoc(ref, {
+        verified: false,
+        verificationStatus: "rejected",
+        rejectionReason: reason,
+        updatedAt: serverTimestamp(),
+      });
       await addDoc(collection(db, "notifications"), {
         userId: id, type: "verification",
-        title: "Verification Rejected",
-        body: "Your verification was rejected. Please re-submit with clear documents.",
+        title: isRevoke ? "Verification Revoked" : "Verification Rejected",
+        body: reason,
         link: "/worker/verification", read: false, createdAt: serverTimestamp(),
       });
-      toast.success("Verification rejected");
+      toast.success(isRevoke ? "Verification revoked" : "Verification rejected");
+
     } else if (action === "suspend") {
       await updateDoc(ref, { status: "suspended", updatedAt: serverTimestamp() });
+      await addDoc(collection(db, "notifications"), {
+        userId: id, type: "account",
+        title: "Account Suspended",
+        body: "Your account has been suspended. Please contact support@skillbridge.ng for assistance.",
+        link: "/worker/dashboard", read: false, createdAt: serverTimestamp(),
+      });
       toast.success("Worker suspended");
+
     } else {
       await updateDoc(ref, { status: "active", updatedAt: serverTimestamp() });
+      await addDoc(collection(db, "notifications"), {
+        userId: id, type: "account",
+        title: "Account Reinstated",
+        body: "Your account has been reactivated. You can now apply for jobs again.",
+        link: "/worker/dashboard", read: false, createdAt: serverTimestamp(),
+      });
       toast.success("Worker unsuspended");
     }
   };
