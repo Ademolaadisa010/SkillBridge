@@ -129,7 +129,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div>
-              <Image className="cursor-pointer" src={Logo} alt="logo" width={150} />
+              <Image className="cursor-pointer" src={Logo} alt="logo" width={200} />
             </div>
 
             {/* Desktop Links */}
