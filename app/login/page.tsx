@@ -208,7 +208,7 @@ export default function Login() {
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
               <div className="bg-[#10b981] p-2 rounded-lg">
-                <Hammer className="w-5 h-5 text-white" />
+                <i className="fas fa-handshake text-white text-lg"></i>
               </div>
               <span className="text-2xl font-bold tracking-tight">SkillBridge</span>
             </div>

@@ -336,7 +336,7 @@ export default function Register() {
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
               <div className="bg-[#10b981] p-2 rounded-lg">
-                <Hammer className="w-6 h-6 text-white" />
+                <i className="fas fa-handshake text-white text-lg"></i>
               </div>
               <span className="text-2xl font-bold tracking-tight">SkillBridge</span>
             </div>
@@ -383,7 +383,7 @@ export default function Register() {
             <div className="mb-8 text-center lg:text-left">
               {/* Mobile logo */}
               <div className="flex items-center justify-center gap-2 mb-6 lg:hidden">
-                <div className="bg-[#10b981] p-2 rounded-lg"><Hammer className="w-5 h-5 text-white" /></div>
+                <div className="bg-[#10b981] p-2 rounded-lg"><i className="fas fa-handshake text-white text-lg"></i></div>
                 <span className="text-xl font-bold text-[#0c4a6e]">SkillBridge</span>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>

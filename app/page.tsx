@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import Logo from "@/public/logo.jpg";
 import { motion, type Variants } from "framer-motion";
 import {
   ShieldCheck,
@@ -67,7 +68,7 @@ const categories = [
 const trustFeatures = [
   {
     icon: <ShieldCheck className="w-8 h-8 text-[#10b981]" />,
-    title: "Escrow Protected Payments",
+    title: "Manual Escrow Payments",
     desc: "Your money is held securely until the job is completed to your satisfaction. Zero risk.",
   },
   {
@@ -127,11 +128,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="bg-[#10b981] p-2 rounded-lg">
-                <i className="fas fa-handshake text-white text-lg"></i>
-              </div>
-              <span className="text-xl font-bold text-[#0c4a6e] tracking-tight">SkillBridge</span>
+            <div>
+              <Image className="cursor-pointer" src={Logo} alt="logo" width={150} />
             </div>
 
             {/* Desktop Links */}
@@ -248,7 +246,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">Payment Protection</div>
-                    <div className="text-sm font-bold">Escrow Secured</div>
+                    <div className="text-sm font-bold">Manual Escrow Secured</div>
                   </div>
                 </div>
                 <div className="absolute -top-5 -right-5 bg-[#0c4a6e] border border-white/20 text-white rounded-xl p-4 shadow-xl flex items-center gap-3">
