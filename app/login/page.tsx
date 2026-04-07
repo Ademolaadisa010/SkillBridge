@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import Logo from "@/public/logo.jpg";
 import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
@@ -207,10 +209,7 @@ export default function Login() {
 
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
-              <div className="bg-[#10b981] p-2 rounded-lg">
-                <i className="fas fa-handshake text-white text-lg"></i>
-              </div>
-              <span className="text-2xl font-bold tracking-tight">SkillBridge</span>
+              {/* <Image className="cursor-pointer" src={Logo} alt="logo" width={200} /> */}
             </div>
 
             <div className="hidden lg:block space-y-8">
@@ -279,13 +278,13 @@ export default function Login() {
             {/* Header */}
             <div className="mb-8 text-center lg:text-left">
               {/* Mobile logo */}
+
+              <Image className="cursor-pointer" src={Logo} alt="logo" width={200} />
               <div className="flex items-center justify-center gap-2 mb-6 lg:hidden">
                 <div className="bg-[#10b981] p-2 rounded-lg">
                   <Hammer className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold text-[#0c4a6e]">SkillBridge</span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
               <p className="text-gray-500">Log in to your account to continue.</p>
             </div>
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Logo from "@/public/logo.jpg"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -335,10 +337,7 @@ export default function Register() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#0c4a6e]/90 to-[#075985]/90" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
-              <div className="bg-[#10b981] p-2 rounded-lg">
-                <i className="fas fa-handshake text-white text-lg"></i>
-              </div>
-              <span className="text-2xl font-bold tracking-tight">SkillBridge</span>
+            
             </div>
             <div className="hidden lg:block space-y-8">
               <h2 className="text-4xl font-bold leading-tight">
@@ -382,6 +381,7 @@ export default function Register() {
 
             <div className="mb-8 text-center lg:text-left">
               {/* Mobile logo */}
+                <Image className="cursor-pointer" src={Logo} alt="logo" width={200} />
               <div className="flex items-center justify-center gap-2 mb-6 lg:hidden">
                 <div className="bg-[#10b981] p-2 rounded-lg"><i className="fas fa-handshake text-white text-lg"></i></div>
                 <span className="text-xl font-bold text-[#0c4a6e]">SkillBridge</span>
