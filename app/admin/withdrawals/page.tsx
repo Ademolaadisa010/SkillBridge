@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { db, auth } from "@/lib/firebase";
 import {
   collection, query, onSnapshot, doc, updateDoc,
-  addDoc, serverTimestamp, orderBy, where, getDoc
+  addDoc, serverTimestamp, orderBy, where, getDoc, deleteField
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -164,8 +164,25 @@ export default function AdminWithdrawalsPage() {
 
   useEffect(() => {
     const q = query(collection(db, "withdrawals"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, snap => {
-      setWithdrawals(snap.docs.map(d => ({ id: d.id, ...d.data() } as Withdrawal)));
+    const unsub = onSnapshot(q, async snap => {
+      const raw = snap.docs.map(d => ({ id: d.id, ...d.data() } as Withdrawal));
+
+      // Enrich with worker name from users collection if missing
+      const enriched = await Promise.all(
+        raw.map(async w => {
+          if (w.workerName) return w;
+          try {
+            const uSnap = await getDoc(doc(db, "users", w.workerId));
+            if (uSnap.exists()) {
+              const d = uSnap.data();
+              return { ...w, workerName: d.displayName || d.fullName || "Worker" };
+            }
+          } catch {}
+          return w;
+        })
+      );
+
+      setWithdrawals(enriched);
       setLoading(false);
     });
     return () => unsub();
@@ -188,7 +205,9 @@ export default function AdminWithdrawalsPage() {
     if (!withdrawal) return;
 
     await updateDoc(doc(db, "withdrawals", id), {
-      status: action, adminNote: note || undefined, processedAt: serverTimestamp()
+      status: action,
+      adminNote: note ? note : deleteField(),
+      processedAt: serverTimestamp(),
     });
 
     if (action === "approved") {
@@ -201,7 +220,7 @@ export default function AdminWithdrawalsPage() {
       }
       // Add debit transaction
       await addDoc(collection(db, "transactions"), {
-        userId: withdrawal.workerId, type: "debit",
+        workerId: withdrawal.workerId, type: "debit",
         amount: withdrawal.amount, withdrawalId: id,
         description: `Withdrawal to ${withdrawal.bankName} — ${withdrawal.accountNumber}`,
         status: "completed", createdAt: serverTimestamp(),

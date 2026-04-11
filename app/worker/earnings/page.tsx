@@ -166,6 +166,7 @@ export default function EarningsPage() {
       const user = auth.currentUser!;
       await addDoc(collection(db, "withdrawals"), {
         workerId:      user.uid,
+        workerName:    workerName || user.displayName || user.email || "Worker",
         bankName:      req.bankName,
         accountNumber: req.accountNumber,
         accountName:   req.accountName,
