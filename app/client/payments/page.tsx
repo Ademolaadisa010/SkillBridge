@@ -18,7 +18,7 @@ import ClientSidebar from "@/components/sidebar/ClientSidebar";
 import toast, { Toaster } from "react-hot-toast";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
-type PaymentStatus = "escrow" | "released" | "refunded" | "pending";
+type PaymentStatus = "escrow" | "released" | "refunded" | "pending" | "pending_verification";
 
 interface Payment {
   id: string;
@@ -58,13 +58,18 @@ function PaymentBadge({ status, refundStatus }: { status: PaymentStatus; refundS
     </span>
   );
 
-  const map: Record<PaymentStatus, { cls: string; icon: React.ReactNode; label: string }> = {
-    escrow:   { cls: "bg-blue-100 text-[#0284c7] border-blue-200",    icon: <Lock className="w-2.5 h-2.5" />,         label: "In Escrow" },
-    released: { cls: "bg-green-100 text-[#10b981] border-green-200",  icon: <CheckCircle2 className="w-2.5 h-2.5" />,  label: "Released" },
-    refunded: { cls: "bg-violet-100 text-violet-700 border-violet-200",icon: <RefreshCcw className="w-2.5 h-2.5" />,  label: "Refunded" },
-    pending:  { cls: "bg-yellow-100 text-yellow-700 border-yellow-200",icon: <Clock className="w-2.5 h-2.5" />,        label: "Pending" },
+  const map: Record<string, { cls: string; icon: React.ReactNode; label: string }> = {
+    escrow:               { cls: "bg-blue-100 text-[#0284c7] border-blue-200",     icon: <Lock className="w-2.5 h-2.5" />,        label: "In Escrow"  },
+    released:             { cls: "bg-green-100 text-[#10b981] border-green-200",   icon: <CheckCircle2 className="w-2.5 h-2.5" />, label: "Released"   },
+    refunded:             { cls: "bg-violet-100 text-violet-700 border-violet-200",icon: <RefreshCcw className="w-2.5 h-2.5" />,   label: "Refunded"   },
+    pending:              { cls: "bg-yellow-100 text-yellow-700 border-yellow-200",icon: <Clock className="w-2.5 h-2.5" />,        label: "Pending"    },
+    pending_verification: { cls: "bg-amber-100 text-amber-700 border-amber-200",   icon: <Clock className="w-2.5 h-2.5" />,        label: "Verifying"  },
   };
-  const { cls, icon, label } = map[status];
+  const { cls, icon, label } = map[status] ?? {
+    cls: "bg-gray-100 text-gray-500 border-gray-200",
+    icon: <Clock className="w-2.5 h-2.5" />,
+    label: status,
+  };
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${cls}`}>
       {icon}{label}
@@ -173,7 +178,7 @@ export default function PaymentsPage() {
         setPayments(data);
         setStats({
           totalSpent: data.filter(p => p.status === "released").reduce((s, p) => s + p.amount, 0),
-          inEscrow:   data.filter(p => p.status === "escrow").reduce((s, p) => s + p.amount, 0),
+          inEscrow:   data.filter(p => p.status === "escrow" || p.status === "pending_verification").reduce((s, p) => s + p.amount, 0),
           refunded:   data.filter(p => p.status === "refunded" || p.refundStatus === "approved").reduce((s, p) => s + p.amount, 0),
           count:      data.length,
         });
@@ -204,11 +209,12 @@ export default function PaymentsPage() {
   });
 
   const FILTERS: { id: PaymentStatus | "all"; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "escrow", label: "In Escrow" },
-    { id: "released", label: "Released" },
-    { id: "refunded", label: "Refunded" },
-    { id: "pending", label: "Pending" },
+    { id: "all",                  label: "All"         },
+    { id: "pending_verification", label: "Verifying"   },
+    { id: "escrow",               label: "In Escrow"   },
+    { id: "released",             label: "Released"    },
+    { id: "refunded",             label: "Refunded"    },
+    { id: "pending",              label: "Pending"     },
   ];
 
   return (

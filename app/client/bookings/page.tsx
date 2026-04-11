@@ -51,7 +51,7 @@ interface Offer {
   workerCompletedJobs?: number;
   price: number;
   message: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "awaiting_payment";
   createdAt?: { seconds: number };
 }
 
@@ -95,6 +95,8 @@ function OfferCard({
       className={`border-2 rounded-2xl p-4 transition ${
         offer.status === "accepted"
           ? "border-[#10b981] bg-[#f0fdf4]"
+          : offer.status === "awaiting_payment"
+          ? "border-amber-300 bg-amber-50"
           : offer.status === "rejected"
           ? "border-gray-100 bg-gray-50 opacity-60"
           : "border-gray-100 bg-white hover:border-[#0284c7] hover:shadow-md"
@@ -135,6 +137,11 @@ function OfferCard({
               <CheckCircle2 className="w-3 h-3" /> Accepted
             </span>
           )}
+          {offer.status === "awaiting_payment" && (
+            <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1 justify-end mt-0.5">
+              <Clock className="w-3 h-3" /> Verifying
+            </span>
+          )}
           {offer.status === "rejected" && (
             <span className="text-[10px] font-bold text-gray-400 mt-0.5 block">Declined</span>
           )}
@@ -172,6 +179,13 @@ function OfferCard({
         </div>
       )}
 
+      {offer.status === "awaiting_payment" && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+          <Clock className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+          <p className="text-xs text-amber-700 font-medium">Payment submitted — waiting for admin to verify your transfer</p>
+        </div>
+      )}
+
       {offer.status === "accepted" && (
         <Link
           href={`/client/messages?worker=${offer.workerId}`}
@@ -184,33 +198,44 @@ function OfferCard({
   );
 }
 
-// ─── Payment Modal ────────────────────────────────────────────────────────────
+// ─── Platform bank details (update these to your real account) ────────────────
+const PLATFORM_ACCOUNT = {
+  bankName:      "Opay",
+  accountNumber: "9058704410",
+  accountName:   "SkillBridge Escrow",
+};
+
+// ─── Payment Modal — Manual Bank Transfer ─────────────────────────────────────
 function PaymentModal({
   offer, booking, onClose, onConfirm, processing,
 }: {
   offer: Offer; booking: Booking; onClose: () => void;
-  onConfirm: (method: string) => Promise<void>; processing: boolean;
+  onConfirm: () => Promise<void>; processing: boolean;
 }) {
-  const [method, setMethod] = useState<"card" | "transfer" | "ussd">("card");
-  const methods = [
-    { id: "card" as const,     label: "Debit / Credit Card",  sub: "Visa, Mastercard, Verve",  icon: <CreditCard className="w-5 h-5" /> },
-    { id: "transfer" as const, label: "Bank Transfer",         sub: "Instant transfer via NIP",  icon: <Banknote className="w-5 h-5" /> },
-    { id: "ussd" as const,     label: "USSD",                  sub: "*737#, *919#, *822# etc.",  icon: <Lock className="w-5 h-5" /> },
-  ];
+  const [copied, setCopied] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const copy = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(field);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}>
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+        className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
         onClick={e => e.stopPropagation()}>
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#0284c7] to-[#0c4a6e] p-5 text-white">
+        <div className="bg-gradient-to-r from-[#0284c7] to-[#0c4a6e] p-5 text-white shrink-0">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-xs text-blue-200 mb-0.5">Secure Payment</p>
-              <h3 className="font-bold text-base">Pay to Confirm Worker</h3>
+              <p className="text-xs text-blue-200 mb-0.5">Step 1 of 2 — Make Transfer</p>
+              <h3 className="font-bold text-base">Pay into Escrow Account</h3>
             </div>
             <button onClick={onClose} className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-white/20 transition">
               <X className="w-4 h-4" />
@@ -218,7 +243,7 @@ function PaymentModal({
           </div>
           <div className="bg-white/10 rounded-xl px-4 py-3 flex items-center justify-between">
             <div>
-              <p className="text-xs text-blue-200">Total to pay</p>
+              <p className="text-xs text-blue-200">Exact amount to send</p>
               <p className="text-2xl font-bold">₦{offer.price.toLocaleString()}</p>
             </div>
             <div className="text-right">
@@ -227,57 +252,102 @@ function PaymentModal({
             </div>
           </div>
         </div>
-        <div className="p-5 space-y-4">
-          {/* Worker summary */}
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+
+          {/* Worker info */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
             <div className="w-10 h-10 bg-gradient-to-br from-[#0284c7] to-[#0c4a6e] rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0">
               {offer.workerName?.[0]?.toUpperCase() || "W"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-[#0c4a6e]">{offer.workerName || "Worker"}</p>
-              <p className="text-xs text-gray-400">Payment held in escrow until job is complete</p>
+              <p className="text-xs text-gray-400">Worker assigned after payment verified</p>
             </div>
             <ShieldCheck className="w-5 h-5 text-[#10b981] shrink-0" />
           </div>
-          {/* Payment methods */}
-          <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Method</p>
-            {methods.map(m => (
-              <button key={m.id} onClick={() => setMethod(m.id)}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition text-left ${method === m.id ? "border-[#0284c7] bg-[#e0f2fe]" : "border-gray-100 bg-white hover:border-gray-200"}`}>
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${method === m.id ? "bg-[#0284c7] text-white" : "bg-gray-100 text-gray-500"}`}>
-                  {m.icon}
+
+          {/* Bank details */}
+          <div className="bg-[#f0f9ff] border-2 border-[#bae6fd] rounded-2xl p-4 space-y-3">
+            <p className="text-xs font-bold text-[#0284c7] uppercase tracking-wider flex items-center gap-1.5">
+              <Banknote className="w-3.5 h-3.5" /> Transfer to this account
+            </p>
+
+            {[
+              { label: "Bank Name",       value: PLATFORM_ACCOUNT.bankName,      field: "bank" },
+              { label: "Account Number",  value: PLATFORM_ACCOUNT.accountNumber, field: "accno" },
+              { label: "Account Name",    value: PLATFORM_ACCOUNT.accountName,   field: "accname" },
+            ].map(({ label, value, field }) => (
+              <div key={field} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-[#e0f2fe]">
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{label}</p>
+                  <p className="text-sm font-bold text-[#0c4a6e] mt-0.5">{value}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#0c4a6e]">{m.label}</p>
-                  <p className="text-xs text-gray-400">{m.sub}</p>
-                </div>
-                <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${method === m.id ? "border-[#0284c7] bg-[#0284c7]" : "border-gray-300"}`}>
-                  {method === m.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                </div>
+                <button onClick={() => copy(value, field)}
+                  className="text-xs font-bold text-[#0284c7] bg-[#e0f2fe] px-3 py-1.5 rounded-lg hover:bg-[#bae6fd] transition flex items-center gap-1">
+                  {copied === field ? <><CheckCircle2 className="w-3 h-3 text-[#10b981]" /> Copied!</> : "Copy"}
+                </button>
+              </div>
+            ))}
+
+            {/* Amount to copy */}
+            <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border-2 border-[#0284c7]">
+              <div>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Amount</p>
+                <p className="text-lg font-bold text-[#0284c7]">₦{offer.price.toLocaleString()}</p>
+              </div>
+              <button onClick={() => copy(String(offer.price), "amount")}
+                className="text-xs font-bold text-[#0284c7] bg-[#e0f2fe] px-3 py-1.5 rounded-lg hover:bg-[#bae6fd] transition flex items-center gap-1">
+                {copied === "amount" ? <><CheckCircle2 className="w-3 h-3 text-[#10b981]" /> Copied!</> : "Copy"}
               </button>
+            </div>
+          </div>
+
+          {/* Steps */}
+          <div className="space-y-2">
+            {[
+              "Open your banking app or USSD",
+              `Transfer exactly ₦${offer.price.toLocaleString()} to the account above`,
+              "Come back here and click \"I've Made Payment\" below",
+              "Admin will verify and confirm your worker within minutes",
+            ].map((step, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full bg-[#0284c7] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</div>
+                <p className="text-xs text-gray-600 leading-relaxed">{step}</p>
+              </div>
             ))}
           </div>
+
           {/* Escrow notice */}
           <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3.5 flex items-start gap-2.5">
             <ShieldCheck className="w-4 h-4 text-[#10b981] shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-bold text-[#047857]">Protected by Escrow</p>
               <p className="text-xs text-[#065f46] mt-0.5 leading-relaxed">
-                Your payment is held securely and only released to the worker after you confirm the job is done.
+                Money is held safely. Released to the worker only after you mark the job as complete. Refund available if job not done.
               </p>
             </div>
           </div>
+
+          {/* Confirmation checkbox */}
+          <label className="flex items-start gap-3 cursor-pointer bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+            <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)}
+              className="mt-0.5 w-4 h-4 accent-[#0284c7] shrink-0" />
+            <p className="text-xs text-amber-800 leading-relaxed">
+              I confirm that I have transferred <strong>₦{offer.price.toLocaleString()}</strong> to the SkillBridge Escrow account above and the transaction is complete.
+            </p>
+          </label>
         </div>
-        <div className="px-5 pb-5">
-          <button onClick={() => onConfirm(method)} disabled={processing}
-            className="w-full bg-[#0284c7] text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#0369a1] transition disabled:opacity-50 flex items-center justify-center gap-2 shadow-md">
+
+        <div className="px-5 pb-5 pt-3 border-t border-gray-100 shrink-0">
+          <button onClick={onConfirm} disabled={!confirmed || processing}
+            className="w-full bg-[#0284c7] text-white py-3.5 rounded-xl text-sm font-bold hover:bg-[#0369a1] transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-md">
             {processing
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing Payment…</>
-              : <><ShieldCheck className="w-4 h-4" /> Pay \u20a6{offer.price.toLocaleString()} Securely</>
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+              : <><CheckCircle2 className="w-4 h-4" /> I've Made Payment — Notify Admin</>
             }
           </button>
-          <p className="text-center text-[10px] text-gray-400 mt-2">🔒 Secured with 256-bit SSL encryption</p>
+          <p className="text-center text-[10px] text-gray-400 mt-2">Admin will verify your transfer and activate the worker</p>
         </div>
       </motion.div>
     </motion.div>
@@ -341,79 +411,106 @@ function BookingModal({
     setPayOffer(offer);
   };
 
-  // Step 2 — client pays → then confirm everything
-  const handlePaymentConfirm = async (paymentMethod: string) => {
+  // Step 2 — client confirms they've made the bank transfer
+  const handlePaymentConfirm = async () => {
     if (!payOffer) return;
     setProcessing(true);
     try {
       const user = auth.currentUser!;
 
-      // 1. Create escrow payment record
-      await addDoc(collection(db, "payments"), {
-        jobId:         booking.id,
-        clientId:      user.uid,
-        workerId:      payOffer.workerId,
-        offerId:       payOffer.id,
-        amount:        payOffer.price,
-        service:       booking.service || booking.category || "Service",
-        workerName:    payOffer.workerName || "",
-        paymentMethod,
-        status:        "escrow",
-        refundStatus:  "none",
-        createdAt:     serverTimestamp(),
+      // 1. Create payment record with status "pending_verification"
+      const paymentRef = await addDoc(collection(db, "payments"), {
+        jobId:          booking.id,
+        clientId:       user.uid,
+        workerId:       payOffer.workerId,
+        offerId:        payOffer.id,
+        amount:         payOffer.price,
+        service:        booking.service || booking.category || "Service",
+        workerName:     payOffer.workerName  || "",
+        clientName:     user.displayName     || user.email || "",
+        paymentMethod:  "bank_transfer",
+        status:         "pending_verification",
+        refundStatus:   "none",
+        platformBank:   PLATFORM_ACCOUNT.bankName,
+        platformAccNo:  PLATFORM_ACCOUNT.accountNumber,
+        createdAt:      serverTimestamp(),
       });
 
-      // 2. Accept this offer
+      // 2. Create transaction record for worker — shows as "pending" in their dashboard
+      await addDoc(collection(db, "transactions"), {
+        workerId:    payOffer.workerId,
+        clientId:    user.uid,
+        jobId:       booking.id,
+        paymentId:   paymentRef.id,
+        amount:      payOffer.price,
+        type:        "escrow",
+        description: `Payment for "${booking.service || booking.category || "service"}" — awaiting admin verification`,
+        status:      "pending",
+        createdAt:   serverTimestamp(),
+      });
+
+      // 3. Mark offer as awaiting_payment (not accepted yet — only after admin confirms)
       await updateDoc(doc(db, "offers", payOffer.id), {
-        status:     "accepted",
-        acceptedAt: serverTimestamp(),
+        status:         "awaiting_payment",
+        paymentId:      paymentRef.id,
+        updatedAt:      serverTimestamp(),
       });
 
-      // 3. Reject all other pending offers
-      const others = offers.filter(o => o.id !== payOffer.id && o.status === "pending");
-      await Promise.all(others.map(o =>
-        updateDoc(doc(db, "offers", o.id), { status: "rejected" })
-      ));
-
-      // 4. Update the job — mark in-progress with worker assigned
+      // 4. Update job status to awaiting_payment
       await updateDoc(doc(db, "jobs", booking.id), {
-        workerId:      payOffer.workerId,
-        workerName:    payOffer.workerName || "",
-        amount:        payOffer.price,
-        status:        "in-progress",
-        paymentStatus: "paid",
-        startedAt:     serverTimestamp(),
+        paymentStatus:  "pending_verification",
+        paymentId:      paymentRef.id,
+        updatedAt:      serverTimestamp(),
       });
 
-      // 5. Notify worker — offer accepted + payment received
+      // 5. Notify ADMIN with full details
       await addDoc(collection(db, "notifications"), {
-        userId:    payOffer.workerId,
-        type:      "booking",
-        title:     "Offer accepted & payment received! 🎉",
-        body:      `Your offer of ₦${payOffer.price.toLocaleString()} for "${booking.service || booking.category || "a service"}" was accepted and paid. Head to My Jobs to get started.`,
-        link:      "/worker/my-jobs",
-        read:      false,
-        createdAt: serverTimestamp(),
+        userId:       "admin",
+        type:         "payment_verification",
+        title:        "💰 New Payment to Verify",
+        body:         `${user.displayName || user.email} claims to have paid ₦${payOffer.price.toLocaleString()} for "${booking.service || booking.category || "a service"}". Worker: ${payOffer.workerName || payOffer.workerId}.`,
+        link:         "/admin/payments",
+        paymentId:    paymentRef.id,
+        jobId:        booking.id,
+        clientId:     user.uid,
+        clientName:   user.displayName || user.email || "",
+        workerId:     payOffer.workerId,
+        workerName:   payOffer.workerName || "",
+        amount:       payOffer.price,
+        read:         false,
+        createdAt:    serverTimestamp(),
       });
 
-      // 6. Notify client — payment confirmed
+      // 6. Notify client — waiting for verification
       await addDoc(collection(db, "notifications"), {
         userId:    user.uid,
-        type:      "booking",
-        title:     "Payment successful",
-        body:      `Payment of ₦${payOffer.price.toLocaleString()} held in escrow. ${payOffer.workerName || "Your worker"} has been confirmed.`,
+        type:      "payment",
+        title:     "Payment submitted for verification ✅",
+        body:      `Your payment of ₦${payOffer.price.toLocaleString()} is being verified by our team. Your worker will be confirmed shortly.`,
         link:      `/client/bookings?booking=${booking.id}`,
         read:      false,
         createdAt: serverTimestamp(),
       });
 
-      setPayOffer(null);
-      toast.success(`Payment successful! ${payOffer.workerName || "The worker"} has been confirmed.`, {
-        iconTheme: { primary: "#10b981", secondary: "#fff" },
-        duration: 5000,
+      // 7. Notify worker — payment incoming, pending verification
+      await addDoc(collection(db, "notifications"), {
+        userId:    payOffer.workerId,
+        type:      "payment",
+        title:     "Payment pending for your offer 🕐",
+        body:      `A client has submitted payment of ₦${payOffer.price.toLocaleString()} for "${booking.service || booking.category || "a service"}". Awaiting admin verification.`,
+        link:      "/worker/earnings",
+        read:      false,
+        createdAt: serverTimestamp(),
       });
-    } catch {
-      toast.error("Payment failed. Please try again.");
+
+      setPayOffer(null);
+      toast.success("Payment submitted! Admin will verify and confirm your worker shortly.", {
+        iconTheme: { primary: "#10b981", secondary: "#fff" },
+        duration: 6000,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit. Please try again.");
     } finally {
       setProcessing(false);
     }

@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { db, auth } from "@/lib/firebase";
 import {
   collection, query, onSnapshot, doc, updateDoc,
-  addDoc, serverTimestamp, orderBy
+  addDoc, serverTimestamp, orderBy, getDoc, getDocs, where
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -20,17 +20,20 @@ import toast, { Toaster } from "react-hot-toast";
 interface Payment {
   id: string;
   jobId?: string;
+  offerId?: string;
   service?: string;
   clientId?: string;
   clientName?: string;
   workerId?: string;
   workerName?: string;
   amount: number;
-  status: "escrow" | "released" | "refunded" | "pending";
+  status: "escrow" | "released" | "refunded" | "pending" | "pending_verification";
   paymentMethod?: string;
   refundStatus?: "none" | "requested" | "approved" | "rejected";
   createdAt?: { seconds: number };
   releasedAt?: { seconds: number };
+  platformAccNo?: string;
+  platformBank?: string;
 }
 
 function fmt(s?: number) {
@@ -39,14 +42,16 @@ function fmt(s?: number) {
 }
 
 const STATUS_MAP = {
-  escrow:   { cls: "bg-blue-100 text-[#0284c7]",     label: "In Escrow",  icon: Lock },
-  released: { cls: "bg-emerald-100 text-emerald-700", label: "Released",   icon: CheckCircle2 },
-  refunded: { cls: "bg-violet-100 text-violet-700",   label: "Refunded",   icon: RefreshCcw },
-  pending:  { cls: "bg-yellow-100 text-yellow-700",   label: "Pending",    icon: Clock },
+  escrow:               { cls: "bg-blue-100 text-[#0284c7]",     label: "In Escrow",          icon: Lock },
+  released:             { cls: "bg-emerald-100 text-emerald-700", label: "Released",            icon: CheckCircle2 },
+  refunded:             { cls: "bg-violet-100 text-violet-700",   label: "Refunded",            icon: RefreshCcw },
+  pending:              { cls: "bg-yellow-100 text-yellow-700",   label: "Pending",             icon: Clock },
+  pending_verification: { cls: "bg-orange-100 text-orange-700",  label: "Awaiting Verification", icon: Clock },
 };
 
-function PaymentModal({ payment, onClose, onRelease, onRefund }: {
+function PaymentModal({ payment, onClose, onVerify, onRelease, onRefund }: {
   payment: Payment; onClose: () => void;
+  onVerify: (p: Payment) => void;
   onRelease: (p: Payment) => void; onRefund: (p: Payment) => void;
 }) {
   return (
@@ -76,7 +81,7 @@ function PaymentModal({ payment, onClose, onRelease, onRefund }: {
             </div>
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Method</p>
-              <p className="text-sm font-semibold text-[#0f172a]">{payment.paymentMethod || "—"}</p>
+              <p className="text-sm font-semibold text-[#0f172a]">{payment.paymentMethod === "bank_transfer" ? "Bank Transfer" : payment.paymentMethod || "—"}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Client</p>
@@ -96,6 +101,20 @@ function PaymentModal({ payment, onClose, onRelease, onRefund }: {
             </div>
           </div>
 
+          {/* Pending verification banner */}
+          {payment.status === "pending_verification" && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3.5 space-y-1.5">
+              <p className="text-xs font-bold text-orange-800 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" /> Awaiting Your Verification
+              </p>
+              <p className="text-xs text-orange-700 leading-relaxed">
+                Client claims to have transferred <strong>₦{payment.amount.toLocaleString()}</strong> to your{" "}
+                {payment.platformBank} account <strong>{payment.platformAccNo}</strong>.
+                Check your bank app, then click Confirm below.
+              </p>
+            </div>
+          )}
+
           {payment.refundStatus === "requested" && (
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
@@ -103,7 +122,19 @@ function PaymentModal({ payment, onClose, onRelease, onRefund }: {
             </div>
           )}
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 flex-wrap">
+            {payment.status === "pending_verification" && (
+              <>
+                <button onClick={() => { onVerify(payment); onClose(); }}
+                  className="flex-1 py-2.5 bg-[#10b981] text-white rounded-xl text-sm font-bold hover:bg-[#059669] transition">
+                  ✓ Confirm Payment Received
+                </button>
+                <button onClick={() => { onRefund(payment); onClose(); }}
+                  className="flex-1 py-2.5 bg-red-100 text-red-600 rounded-xl text-sm font-bold hover:bg-red-200 transition">
+                  ✗ Reject — Not Received
+                </button>
+              </>
+            )}
             {payment.status === "escrow" && (
               <>
                 <button onClick={() => { onRelease(payment); onClose(); }}
@@ -116,7 +147,7 @@ function PaymentModal({ payment, onClose, onRelease, onRefund }: {
                 </button>
               </>
             )}
-            <button onClick={onClose} className={`py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition ${payment.status === "escrow" ? "px-4" : "flex-1"}`}>
+            <button onClick={onClose} className={`py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-200 transition ${(payment.status === "escrow" || payment.status === "pending_verification") ? "px-4" : "flex-1"}`}>
               Close
             </button>
           </div>
@@ -164,30 +195,160 @@ export default function AdminPaymentsPage() {
     setPage(0);
   }, [payments, search, statusFilter]);
 
-  const releasePayment = async (payment: Payment) => {
+  const verifyPayment = async (payment: Payment) => {
+    // 1. Mark payment as escrow (verified, held)
     await updateDoc(doc(db, "payments", payment.id), {
-      status: "released", releasedAt: serverTimestamp()
+      status: "escrow",
+      verifiedAt: serverTimestamp(),
     });
-    // Credit worker wallet
-    if (payment.workerId) {
-      await addDoc(collection(db, "transactions"), {
-        userId: payment.workerId, type: "credit",
-        amount: payment.amount, paymentId: payment.id,
-        description: `Payment released for: ${payment.service || "job"}`,
-        status: "completed", createdAt: serverTimestamp(),
-      });
-      await addDoc(collection(db, "notifications"), {
-        userId: payment.workerId, type: "payment",
-        title: "Payment Released! 💰",
-        body: `₦${payment.amount.toLocaleString()} has been released to your wallet.`,
-        link: "/worker/earnings", read: false, createdAt: serverTimestamp(),
+
+    // 2. Accept the offer
+    if (payment.offerId) {
+      await updateDoc(doc(db, "offers", payment.offerId), {
+        status: "accepted",
+        acceptedAt: serverTimestamp(),
       });
     }
-    // Update job payment status
+
+    // 3. Mark job as in-progress with worker assigned
+    if (payment.jobId) {
+      await updateDoc(doc(db, "jobs", payment.jobId), {
+        status: "in-progress",
+        paymentStatus: "paid",
+        workerId: payment.workerId,
+        workerName: payment.workerName || "",
+        amount: payment.amount,
+        startedAt: serverTimestamp(),
+      });
+    }
+
+    // 4. Update existing pending transaction → show "In Escrow" in worker earnings
+    //    (created by client booking page with status:"pending", type:"escrow")
+    if (payment.workerId) {
+      const txSnap = await getDocs(
+        query(collection(db, "transactions"),
+          where("paymentId", "==", payment.id),
+          where("workerId", "==", payment.workerId)
+        )
+      );
+      if (!txSnap.empty) {
+        // Update the existing pending transaction to escrow/completed
+        await updateDoc(doc(db, "transactions", txSnap.docs[0].id), {
+          type:        "escrow",
+          status:      "escrow",
+          description: `Payment held in escrow for "${payment.service || "a service"}" — job in progress`,
+          updatedAt:   serverTimestamp(),
+        });
+      } else {
+        // No existing transaction — create one
+        await addDoc(collection(db, "transactions"), {
+          workerId:    payment.workerId,
+          clientId:    payment.clientId || "",
+          jobId:       payment.jobId    || "",
+          paymentId:   payment.id,
+          type:        "escrow",
+          amount:      payment.amount,
+          description: `Payment held in escrow for "${payment.service || "a service"}" — job in progress`,
+          status:      "escrow",
+          createdAt:   serverTimestamp(),
+        });
+      }
+    }
+
+    // 5. Notify worker — offer accepted
+    if (payment.workerId) {
+      await addDoc(collection(db, "notifications"), {
+        userId:    payment.workerId,
+        type:      "booking",
+        title:     "Offer accepted & payment verified! 🎉",
+        body:      `Payment of ₦${payment.amount.toLocaleString()} for "${payment.service || "a service"}" has been verified. Head to My Jobs to get started.`,
+        link:      "/worker/my-jobs",
+        read:      false,
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    // 6. Notify client — payment confirmed
+    if (payment.clientId) {
+      await addDoc(collection(db, "notifications"), {
+        userId:    payment.clientId,
+        type:      "payment",
+        title:     "Payment verified ✅",
+        body:      `Your payment of ₦${payment.amount.toLocaleString()} has been verified. ${payment.workerName || "Your worker"} has been confirmed and will be in touch soon.`,
+        link:      `/client/bookings?booking=${payment.jobId}`,
+        read:      false,
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    toast.success("Payment verified! Worker and client have been notified.");
+  };
+
+  const releasePayment = async (payment: Payment) => {
+    // 1. Mark payment as released
+    await updateDoc(doc(db, "payments", payment.id), {
+      status: "released", releasedAt: serverTimestamp(),
+    });
+
+    if (payment.workerId) {
+      // 2. Get current wallet balance from users collection
+      const workerSnap = await getDoc(doc(db, "users", payment.workerId));
+      const workerData = workerSnap.exists() ? workerSnap.data() : {};
+      const currentBalance  = workerData.walletBalance  || 0;
+      const currentEarned   = workerData.totalEarned    || 0;
+
+      // 3. Update worker wallet balance in users collection
+      await updateDoc(doc(db, "users", payment.workerId), {
+        walletBalance: currentBalance + payment.amount,
+        totalEarned:   currentEarned  + payment.amount,
+      });
+
+      // 4. Update existing transaction to "credit/completed" — or create if missing
+      const txSnap = await getDocs(
+        query(collection(db, "transactions"),
+          where("paymentId", "==", payment.id),
+          where("workerId", "==", payment.workerId)
+        )
+      );
+      if (!txSnap.empty) {
+        await updateDoc(doc(db, "transactions", txSnap.docs[0].id), {
+          type:        "credit",
+          status:      "completed",
+          description: `₦${payment.amount.toLocaleString()} earned for "${payment.service || "a service"}"`,
+          releasedAt:  serverTimestamp(),
+        });
+      } else {
+        await addDoc(collection(db, "transactions"), {
+          workerId:    payment.workerId,
+          clientId:    payment.clientId  || "",
+          jobId:       payment.jobId     || "",
+          paymentId:   payment.id,
+          type:        "credit",
+          amount:      payment.amount,
+          description: `₦${payment.amount.toLocaleString()} earned for "${payment.service || "a service"}"`,
+          status:      "completed",
+          createdAt:   serverTimestamp(),
+        });
+      }
+
+      // 5. Notify worker
+      await addDoc(collection(db, "notifications"), {
+        userId:    payment.workerId,
+        type:      "payment",
+        title:     "Payment Released! 💰",
+        body:      `₦${payment.amount.toLocaleString()} has been added to your wallet for "${payment.service || "a job"}".`,
+        link:      "/worker/earnings",
+        read:      false,
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    // 6. Update job payment status
     if (payment.jobId) {
       await updateDoc(doc(db, "jobs", payment.jobId), { paymentStatus: "released" });
     }
-    toast.success("Payment released to worker");
+
+    toast.success(`₦${payment.amount.toLocaleString()} released to ${payment.workerName || "worker"}`);
   };
 
   const refundPayment = async (payment: Payment) => {
@@ -205,7 +366,8 @@ export default function AdminPaymentsPage() {
     toast.success("Payment refunded");
   };
 
-  const totalEscrow = payments.filter(p => p.status === "escrow").reduce((s, p) => s + p.amount, 0);
+  const pendingVerifCount = payments.filter(p => p.status === "pending_verification").length;
+  const totalEscrow = payments.filter(p => p.status === "escrow" || p.status === "pending_verification").reduce((s, p) => s + p.amount, 0);
   const totalReleased = payments.filter(p => p.status === "released").reduce((s, p) => s + p.amount, 0);
   const refundRequests = payments.filter(p => p.refundStatus === "requested").length;
 
@@ -225,7 +387,35 @@ export default function AdminPaymentsPage() {
         </header>
 
         {/* Summary cards */}
-        <div className="px-4 pt-4 shrink-0 grid grid-cols-3 gap-3">
+        {/* Pending verification alert */}
+        {pendingVerifCount > 0 && (
+          <div className="mx-4 mt-4 bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-orange-600 animate-pulse" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-orange-800">
+                {pendingVerifCount} payment{pendingVerifCount > 1 ? "s" : ""} awaiting your verification
+              </p>
+              <p className="text-xs text-orange-600 mt-0.5">
+                Clients have submitted bank transfers. Check your account and verify below.
+              </p>
+            </div>
+            <button onClick={() => setStatusFilter("pending_verification")}
+              className="shrink-0 text-xs font-bold bg-orange-600 text-white px-3 py-1.5 rounded-lg hover:bg-orange-700 transition">
+              View All →
+            </button>
+          </div>
+        )}
+
+        <div className="px-4 pt-4 shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className={`rounded-xl border p-3.5 ${pendingVerifCount > 0 ? "bg-orange-50 border-orange-200" : "bg-white border-gray-100"}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className={`w-4 h-4 ${pendingVerifCount > 0 ? "text-orange-500" : "text-gray-300"}`} />
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">To Verify</span>
+            </div>
+            <p className={`text-lg font-bold ${pendingVerifCount > 0 ? "text-orange-600" : "text-[#0f172a]"}`}>{pendingVerifCount}</p>
+          </div>
           <div className="bg-white rounded-xl border border-gray-100 p-3.5">
             <div className="flex items-center gap-2 mb-1">
               <Lock className="w-4 h-4 text-[#0284c7]" />
@@ -262,6 +452,7 @@ export default function AdminPaymentsPage() {
             <option value="escrow">In Escrow</option>
             <option value="released">Released</option>
             <option value="refunded">Refunded</option>
+            <option value="pending_verification">Awaiting Verification</option>
             <option value="pending">Pending</option>
           </select>
         </div>
@@ -329,7 +520,7 @@ export default function AdminPaymentsPage() {
         </main>
       </div>
       <AnimatePresence>
-        {selected && <PaymentModal payment={selected} onClose={() => setSelected(null)} onRelease={releasePayment} onRefund={refundPayment} />}
+        {selected && <PaymentModal payment={selected} onClose={() => setSelected(null)} onVerify={verifyPayment} onRelease={releasePayment} onRefund={refundPayment} />}
       </AnimatePresence>
     </div>
   );

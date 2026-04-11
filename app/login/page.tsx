@@ -204,7 +204,7 @@ export default function Login() {
       <div className="flex flex-col lg:flex-row min-h-screen w-full">
 
         {/* ── Left Panel ── */}
-        <aside className="lg:w-5/12 bg-[#0c4a6e] text-white relative overflow-hidden flex flex-col justify-between p-8 lg:p-12">
+        <aside className="lg:w-5/12 bg-[#0c4a6e] md:flex text-white relative overflow-hidden hidden flex-col justify-between p-8 lg:p-12">
           <div className="absolute inset-0 bg-gradient-to-b from-[#0c4a6e]/90 to-[#075985]/90" />
 
           <div className="relative z-10">
@@ -277,14 +277,9 @@ export default function Login() {
 
             {/* Header */}
             <div className="mb-8 text-center lg:text-left">
-              {/* Mobile logo */}
 
-              <Image className="cursor-pointer" src={Logo} alt="logo" width={200} />
-              <div className="flex items-center justify-center gap-2 mb-6 lg:hidden">
-                <div className="bg-[#10b981] p-2 rounded-lg">
-                  <Hammer className="w-5 h-5 text-white" />
-                </div>
-              </div>
+              <Image className="cursor-pointer mx-auto mb-10" src={Logo} alt="logo" width={200} />
+              
               <p className="text-gray-500">Log in to your account to continue.</p>
             </div>
 

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Logo from "@/public/logo.jpg";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import Image from "next/image";
 
 export default function ClientSidebar() {
   const pathname = usePathname();
@@ -35,10 +37,7 @@ export default function ClientSidebar() {
     <aside className="w-64 bg-white border-r border-gray-100 hidden lg:flex flex-col h-screen sticky top-0">
       {/* Logo */}
       <div className="flex items-center gap-2 px-6 py-6 border-b border-gray-100">
-        <div className="w-9 h-9 bg-[#10b981] rounded-lg flex items-center justify-center shadow-sm shrink-0">
-          <i className="fas fa-handshake text-white text-base"></i>
-        </div>
-        <span className="text-lg font-bold text-[#0c4a6e] tracking-tight">SkillBridge</span>
+        <Image src={Logo} alt="logo" width={150}/>
       </div>
 
       {/* Label */}

@@ -42,7 +42,7 @@ interface MyOffer {
   clientName?: string;
   price: number;
   message: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "awaiting_payment";
   service?: string;
   address?: string;
   date?: string;
@@ -69,12 +69,14 @@ function timeAgo(s?: number) {
   return `${Math.floor(d / 86400000)}d ago`;
 }
 
-function OfferBadge({ status }: { status: MyOffer["status"] }) {
-  const cfg = {
-    pending:  { cls: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="w-3 h-3" />,        label: "Pending"  },
-    accepted: { cls: "bg-green-100 text-[#10b981] border-green-200",   icon: <CheckCircle2 className="w-3 h-3" />, label: "Accepted" },
-    rejected: { cls: "bg-gray-100 text-gray-500 border-gray-200",      icon: <XCircle className="w-3 h-3" />,      label: "Declined" },
-  }[status];
+function OfferBadge({ status }: { status: string }) {
+  const map: Record<string, { cls: string; icon: React.ReactNode; label: string }> = {
+    pending:          { cls: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Clock className="w-3 h-3" />,        label: "Pending"         },
+    accepted:         { cls: "bg-green-100 text-[#10b981] border-green-200",    icon: <CheckCircle2 className="w-3 h-3" />, label: "Accepted"        },
+    rejected:         { cls: "bg-gray-100 text-gray-500 border-gray-200",       icon: <XCircle className="w-3 h-3" />,      label: "Declined"        },
+    awaiting_payment: { cls: "bg-amber-100 text-amber-700 border-amber-200",    icon: <Clock className="w-3 h-3" />,        label: "Payment Pending" },
+  };
+  const cfg = map[status] ?? { cls: "bg-gray-100 text-gray-500 border-gray-200", icon: <Clock className="w-3 h-3" />, label: status };
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${cfg.cls}`}>
       {cfg.icon}{cfg.label}
@@ -154,6 +156,7 @@ function MyOfferCard({ offer }: { offer: MyOffer }) {
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className={`rounded-2xl border-2 overflow-hidden transition ${
         offer.status === "accepted" ? "border-[#10b981]"
+        : offer.status === "awaiting_payment" ? "border-amber-300"
         : offer.status === "rejected" ? "border-gray-100 opacity-70"
         : "border-gray-100 hover:shadow-md"
       }`}>
@@ -166,7 +169,7 @@ function MyOfferCard({ offer }: { offer: MyOffer }) {
         </div>
       )}
 
-      <div className={`p-4 ${offer.status === "accepted" ? "bg-[#f0fdf4]" : offer.status === "rejected" ? "bg-gray-50" : "bg-white"}`}>
+      <div className={`p-4 ${offer.status === "accepted" ? "bg-[#f0fdf4]" : offer.status === "awaiting_payment" ? "bg-amber-50" : offer.status === "rejected" ? "bg-gray-50" : "bg-white"}`}>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold ${CAT_COLOR[(offer as any).category || "other"]}`}>
@@ -224,6 +227,12 @@ function MyOfferCard({ offer }: { offer: MyOffer }) {
         <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
           <XCircle className="w-4 h-4 text-gray-400 shrink-0" />
           <p className="text-xs text-gray-500">Client chose a different worker. Keep applying!</p>
+        </div>
+      )}
+      {offer.status === "awaiting_payment" && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+          <Clock className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+          <p className="text-xs text-amber-700 font-medium">Client submitted payment — waiting for admin to verify the transfer. You'll be notified once confirmed.</p>
         </div>
       )}
       </div>

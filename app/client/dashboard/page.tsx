@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Hero from "@/public/hero.jpg";
 import { db, auth } from "@/lib/firebase";
+import Logo from "@/public/logo.jpg"
 import {
   collection, query, where, onSnapshot,
   getDocs, limit, doc
@@ -196,7 +197,8 @@ export default function ClientDashboardPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Mobile Top Bar */}
-        <header className="lg:hidden bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between shrink-0 shadow-sm">
+        <header className="lg:hidden bg-white border-b border-gray-100 px-2 h-14 flex items-center justify-between shrink-0 shadow-sm">
+          <Image src={Logo} alt="logo" width={150} />
           <button
             onClick={() => setMobileOpen(true)}
             className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 transition text-[#0c4a6e]"
@@ -204,14 +206,6 @@ export default function ClientDashboardPage() {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="bg-[#10b981] p-1.5 rounded-lg">
-              <i className="fas fa-handshake text-white text-sm"></i>
-            </div>
-            <span className="text-base font-bold text-[#0c4a6e]">SkillBridge</span>
-          </div>
-          {/* Spacer to keep logo centred */}
-          <div className="w-9" />
         </header>
 
         {/* Scrollable Body */}
@@ -221,8 +215,7 @@ export default function ClientDashboardPage() {
             {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <p className="text-sm text-gray-400 mb-0.5">Welcome back 👋</p>
-                <h2 className="text-2xl sm:text-3xl font-bold text-[#0c4a6e]">{userName}</h2>
+                <p className="text-2xl font-bold mb-0.5">Welcome back 👋, <strong className="text-2xl font-bold text-[#0c4a6e]">{userName}</strong></p>
               </div>
               <Link
                 href="/client/book"

@@ -332,8 +332,7 @@ export default function Register() {
 
       <div className="flex flex-col lg:flex-row min-h-screen w-full">
 
-        {/* ── Left Panel ── */}
-        <aside className="lg:w-5/12 bg-[#0c4a6e] text-white relative overflow-hidden flex flex-col justify-between p-8 lg:p-12">
+        <aside className="lg:w-5/12 bg-[#0c4a6e] text-white md:flex relative overflow-hidden hidden flex-col justify-between p-8 lg:p-12">
           <div className="absolute inset-0 bg-gradient-to-b from-[#0c4a6e]/90 to-[#075985]/90" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
@@ -376,16 +375,11 @@ export default function Register() {
         </aside>
 
         {/* ── Right Panel ── */}
-        <main className="lg:w-7/12 bg-white flex flex-col justify-center p-6 sm:p-12 lg:p-16 overflow-y-auto">
+        <main className="lg:w-7/12 bg-white flex flex-col justify-center p-6 sm:p-12 overflow-y-auto">
           <div className="max-w-xl mx-auto w-full">
 
             <div className="mb-8 text-center lg:text-left">
-              {/* Mobile logo */}
-                <Image className="cursor-pointer" src={Logo} alt="logo" width={200} />
-              <div className="flex items-center justify-center gap-2 mb-6 lg:hidden">
-                <div className="bg-[#10b981] p-2 rounded-lg"><i className="fas fa-handshake text-white text-lg"></i></div>
-                <span className="text-xl font-bold text-[#0c4a6e]">SkillBridge</span>
-              </div>
+                <Image className="cursor-pointer mb-10 mx-auto" src={Logo} alt="logo" width={200} />
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>
               <p className="text-gray-500">Start connecting with opportunities today.</p>
             </div>
