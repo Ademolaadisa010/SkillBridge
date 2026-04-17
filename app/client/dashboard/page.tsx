@@ -160,12 +160,6 @@ export default function ClientDashboardPage() {
         setStats(prev => ({ ...prev, newMessages: total }));
       });
 
-      // 4. Recommended workers
-      getDocs(query(collection(db, "workers"), limit(3))).then((snap) => {
-        setRecommendedWorkers(snap.docs.map(d => ({ id: d.id, ...d.data() } as Worker)));
-        setLoading(false);
-      });
-
       return () => { unsubJobs(); unsubBookmarks(); unsubChats(); };
     });
 
@@ -282,75 +276,6 @@ export default function ClientDashboardPage() {
               )}
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-bold text-[#0c4a6e]">Recommended Workers</h3>
-                <Link href="/client/book" className="flex items-center gap-1 text-xs text-[#0284c7] font-semibold hover:underline">
-                  View All <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {loading ? (
-                  [...Array(3)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
-                      <div className="flex gap-3 mb-3">
-                        <div className="w-14 h-14 bg-gray-100 rounded-full" />
-                        <div className="flex-1 space-y-2 pt-1">
-                          <div className="h-3 bg-gray-100 rounded w-3/4" />
-                          <div className="h-2.5 bg-gray-100 rounded w-1/2" />
-                        </div>
-                      </div>
-                      <div className="h-8 bg-gray-100 rounded-xl" />
-                    </div>
-                  ))
-                ) : recommendedWorkers.length > 0 ? (
-                  recommendedWorkers.map((worker) => (
-                    <div key={worker.id} className="bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-lg transition group">
-                      <div className="flex items-start gap-3 mb-4">
-                        <div className="relative">
-                          <Image src={Hero} alt="worker" className="w-14 h-14 rounded-full object-cover" />
-                          {worker.verified && (
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#10b981] rounded-full flex items-center justify-center border-2 border-white">
-                              <ShieldCheck className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-[#0c4a6e] text-sm truncate">{worker.fullName}</h4>
-                          <p className="text-xs text-gray-500 mb-1">{worker.service}</p>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                            <span className="text-xs font-semibold text-gray-700">{worker.rating || "5.0"}</span>
-                            <span className="text-xs text-gray-400">({worker.reviews || 0} reviews)</span>
-                          </div>
-                          {worker.location && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <MapPin className="w-2.5 h-2.5 text-gray-300" />
-                              <span className="text-[10px] text-gray-400">{worker.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                        <span className="text-sm font-bold text-[#0284c7]">{worker.price}/hr</span>
-                        <Link
-                          href={`/client/book?worker=${worker.id}`}
-                          className="bg-[#0284c7] text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#0369a1] transition"
-                        >
-                          Book Now
-                        </Link>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-3 text-center py-8">
-                    <Zap className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                    <p className="text-sm text-gray-400">Finding workers near you...</p>
-                  </div>
-                )}
-              </div>
-            </div>
 
             <div>
               <h3 className="text-base font-bold text-[#0c4a6e] mb-4">Recent Activity</h3>

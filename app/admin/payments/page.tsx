@@ -41,6 +41,43 @@ function fmt(s?: number) {
   return new Date(s * 1000).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// ─── Auto-create chat between client and worker ───────────────────────────────
+async function getOrCreateChat(clientId: string, workerId: string, service: string, jobId: string): Promise<void> {
+  try {
+    const snap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", clientId)));
+    const existing = snap.docs.find(d => (d.data().participants as string[]).includes(workerId));
+    if (existing) return; // chat already exists
+
+    // Fetch names
+    let clientName = "Client", workerName = "Worker";
+    const [cSnap, wSnap] = await Promise.all([
+      getDoc(doc(db, "users", clientId)),
+      getDoc(doc(db, "users", workerId)),
+    ]);
+    if (cSnap.exists()) clientName = cSnap.data().displayName || cSnap.data().fullName || "Client";
+    if (wSnap.exists()) workerName = wSnap.data().displayName || wSnap.data().fullName || "Worker";
+
+    const chatRef = await addDoc(collection(db, "chats"), {
+      participants: [clientId, workerId],
+      participantDetails: {
+        [clientId]: { name: clientName, role: "client" },
+        [workerId]: { name: workerName, role: "worker" },
+      },
+      jobId, bookingService: service, paymentConfirmed: true,
+      lastMessage:   "Payment confirmed — chat unlocked!",
+      lastMessageAt: serverTimestamp(),
+      unreadCount:   { [clientId]: 1, [workerId]: 1 },
+      createdAt:     serverTimestamp(),
+    });
+    await addDoc(collection(db, "messages"), {
+      chatId: chatRef.id, senderId: "system",
+      text: `✅ Payment confirmed for "${service}"! You can now chat here.`,
+      createdAt: serverTimestamp(), read: false, system: true,
+    });
+  } catch (e) { console.error("Chat creation error:", e); }
+}
+
+
 const STATUS_MAP = {
   escrow:               { cls: "bg-blue-100 text-[#0284c7]",     label: "In Escrow",          icon: Lock },
   released:             { cls: "bg-emerald-100 text-emerald-700", label: "Released",            icon: CheckCircle2 },
@@ -279,6 +316,11 @@ export default function AdminPaymentsPage() {
         read:      false,
         createdAt: serverTimestamp(),
       });
+    }
+
+    // 7. Auto-create chat between client and worker
+    if (payment.clientId && payment.workerId) {
+      await getOrCreateChat(payment.clientId, payment.workerId, payment.service || "Service", payment.jobId || "");
     }
 
     toast.success("Payment verified! Worker and client have been notified.");
