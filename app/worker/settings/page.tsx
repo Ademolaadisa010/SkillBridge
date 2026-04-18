@@ -73,9 +73,9 @@ export default function WorkerSettingsPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async user => {
       if (!user) { router.push("/login"); return; }
-      const snap = await getDoc(doc(db, "workers", user.uid));
+      const snap = await getDoc(doc(db, "users", user.uid));
       const d = snap.data() || {};
-      setProfile(p => ({ ...p, displayName: user.displayName || "", email: user.email || "", phone: d.phone || "", location: d.location || "", bio: d.bio || "", services: d.services || [], hourlyRate: d.hourlyRate || "", notifBooking: d.notifBooking ?? true, notifPayment: d.notifPayment ?? true, notifMessages: d.notifMessages ?? true, notifDisputes: d.notifDisputes ?? true, notifSystem: d.notifSystem ?? true }));
+      setProfile(p => ({ ...p, displayName: user.displayName || "", email: user.email || "", phone: d.phone || "", location: d.location || "", bio: d.bio || "", services: d.services || d.skills || [], hourlyRate: d.hourlyRate || "", notifBooking: d.notifBooking ?? true, notifPayment: d.notifPayment ?? true, notifMessages: d.notifMessages ?? true, notifDisputes: d.notifDisputes ?? true, notifSystem: d.notifSystem ?? true }));
       setLoading(false);
     });
     return () => unsub();
@@ -85,12 +85,34 @@ export default function WorkerSettingsPage() {
 
   const saveProfile = async () => {
     setSaving("profile");
-    try { const user = auth.currentUser!; await updateProfile(user, { displayName: profile.displayName }); await updateDoc(doc(db, "workers", user.uid), { fullName: profile.displayName, phone: profile.phone, location: profile.location, bio: profile.bio, updatedAt: serverTimestamp() }); toast.success("Profile saved."); } catch { toast.error("Failed to save."); } finally { setSaving(null); }
+    try {
+      const user = auth.currentUser!;
+      await updateProfile(user, { displayName: profile.displayName });
+      await updateDoc(doc(db, "users", user.uid), {
+        displayName: profile.displayName,
+        fullName:    profile.displayName,
+        phone:       profile.phone,
+        location:    profile.location,
+        bio:         profile.bio,
+        updatedAt:   serverTimestamp(),
+      });
+      toast.success("Profile saved.");
+    } catch (e) { console.error(e); toast.error("Failed to save."); }
+    finally { setSaving(null); }
   };
 
   const saveServices = async () => {
     setSaving("services");
-    try { await updateDoc(doc(db, "workers", auth.currentUser!.uid), { services: profile.services, hourlyRate: profile.hourlyRate, updatedAt: serverTimestamp() }); toast.success("Services saved."); } catch { toast.error("Failed to save."); } finally { setSaving(null); }
+    try {
+      await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+        skills:      profile.services,
+        services:    profile.services,
+        hourlyRate:  profile.hourlyRate,
+        updatedAt:   serverTimestamp(),
+      });
+      toast.success("Services saved.");
+    } catch (e) { console.error(e); toast.error("Failed to save."); }
+    finally { setSaving(null); }
   };
 
   const changePassword = async () => {
@@ -102,7 +124,18 @@ export default function WorkerSettingsPage() {
 
   const saveNotifs = async () => {
     setSaving("notifs");
-    try { await updateDoc(doc(db, "workers", auth.currentUser!.uid), { notifBooking: profile.notifBooking, notifPayment: profile.notifPayment, notifMessages: profile.notifMessages, notifDisputes: profile.notifDisputes, notifSystem: profile.notifSystem, updatedAt: serverTimestamp() }); toast.success("Preferences saved."); } catch { toast.error("Failed to save."); } finally { setSaving(null); }
+    try {
+      await updateDoc(doc(db, "users", auth.currentUser!.uid), {
+        notifBooking:   profile.notifBooking,
+        notifPayment:   profile.notifPayment,
+        notifMessages:  profile.notifMessages,
+        notifDisputes:  profile.notifDisputes,
+        notifSystem:    profile.notifSystem,
+        updatedAt:      serverTimestamp(),
+      });
+      toast.success("Preferences saved.");
+    } catch (e) { console.error(e); toast.error("Failed to save."); }
+    finally { setSaving(null); }
   };
 
   const handleDelete = async (pw: string) => {

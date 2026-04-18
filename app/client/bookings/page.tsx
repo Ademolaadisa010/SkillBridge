@@ -8,7 +8,7 @@ import {
   Menu, MapPin, Calendar, Clock, Star, CheckCircle2,
   Send, Inbox, User, CreditCard, ShieldAlert,
   MessageCircle, Loader2, BadgeCheck, AlertCircle,
-  Zap, ShieldCheck, Banknote, Phone, Mail,
+  Zap, ShieldCheck, Banknote, Phone, Mail, Lock,
   Briefcase, Award, TrendingUp, ExternalLink
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -105,10 +105,11 @@ const avatarColor = (n: string) => AVATAR_COLORS[(n || "W").charCodeAt(0) % AVAT
 const initials    = (n: string) => (n || "W").split(" ").map(x => x[0]).join("").toUpperCase().slice(0, 2);
 
 // ─── Worker Profile Modal ─────────────────────────────────────────────────────
-function WorkerProfileModal({ workerId, onClose, onMessage }: {
+function WorkerProfileModal({ workerId, onClose, onMessage, hasPaid }: {
   workerId: string;
   onClose: () => void;
   onMessage: () => void;
+  hasPaid: boolean; // true if client has a confirmed/in-progress job with this worker
 }) {
   const [worker, setWorker] = useState<WorkerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -194,15 +195,16 @@ function WorkerProfileModal({ workerId, onClose, onMessage }: {
                 </div>
               </div>
 
-              {/* Bio */}
-              {worker.bio && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">About</p>
-                  <p className="text-sm text-gray-600 leading-relaxed">{worker.bio}</p>
-                </div>
-              )}
+              {/* Bio — always visible */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">About</p>
+                {worker.bio
+                  ? <p className="text-sm text-gray-600 leading-relaxed">{worker.bio}</p>
+                  : <p className="text-sm text-gray-400 italic">No bio added yet.</p>
+                }
+              </div>
 
-              {/* Skills */}
+              {/* Skills — always visible */}
               {worker.skills && worker.skills.length > 0 && (
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Skills</p>
@@ -214,22 +216,34 @@ function WorkerProfileModal({ workerId, onClose, onMessage }: {
                 </div>
               )}
 
-              {/* Contact info */}
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contact</p>
-                {worker.phone && (
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-                    <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-                    <span className="text-sm font-semibold text-[#0c4a6e]">{worker.phone}</span>
+              {/* Contact — only visible after payment confirmed */}
+              {hasPaid ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contact Details</p>
+                  {worker.phone && (
+                    <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                      <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="text-sm font-semibold text-[#0c4a6e]">{worker.phone}</span>
+                    </div>
+                  )}
+                  {worker.email && (
+                    <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                      <Mail className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="text-sm font-semibold text-[#0c4a6e] truncate">{worker.email}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                  <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-amber-800">Contact details locked</p>
+                    <p className="text-xs text-amber-600 mt-0.5 leading-relaxed">
+                      Phone number and email are revealed after you accept an offer and payment is confirmed.
+                    </p>
                   </div>
-                )}
-                {worker.email && (
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-                    <Mail className="w-4 h-4 text-gray-400 shrink-0" />
-                    <span className="text-sm font-semibold text-[#0c4a6e] truncate">{worker.email}</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Joined */}
               {worker.createdAt && (
@@ -484,6 +498,8 @@ function BookingModal({ booking, onClose, defaultTab }: {
   const [payOffer, setPayOffer]       = useState<Offer | null>(null);
   const [processing, setProcessing]   = useState(false);
   const [viewProfileId, setViewProfileId] = useState<string | null>(null);
+  // hasPaid = payment verified by admin (job is in-progress or completed)
+  const hasPaid = booking.status === "in-progress" || booking.status === "completed";
 
   useEffect(() => {
     const q = query(collection(db, "offers"), where("jobId", "==", booking.id));
@@ -710,6 +726,7 @@ function BookingModal({ booking, onClose, defaultTab }: {
             workerId={viewProfileId}
             onClose={() => setViewProfileId(null)}
             onMessage={() => { setViewProfileId(null); }}
+            hasPaid={hasPaid}
           />
         )}
       </AnimatePresence>

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import Logo from "@/public/logo.jpg"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -213,8 +211,8 @@ export default function Register() {
         createdAt: serverTimestamp(),
       });
 
-      // 4. Send branded verification email via API route (EmailJS → no spam)
-      //    Falls back to Firebase default if API route fails
+      // 4. Send branded HTML email via Nodemailer (server-side Gmail SMTP)
+      //    Falls back to Firebase's own sendEmailVerification if Nodemailer fails
       try {
         const res = await fetch("/api/send-verification", {
           method: "POST",
@@ -226,12 +224,15 @@ export default function Register() {
             continueUrl: `${window.location.origin}/login?verified=true`,
           }),
         });
-        if (!res.ok) throw new Error("API route failed");
+        if (!res.ok) {
+          console.warn("[register] Nodemailer failed, using Firebase fallback");
+          throw new Error("Nodemailer route failed");
+        }
       } catch {
-        // Fallback: use Firebase's own sendEmailVerification
+        // Fallback: Firebase's own sendEmailVerification
         await sendEmailVerification(cred.user, {
-          url: `${window.location.origin}/login?verified=true`,
-          handleCodeInApp: false,
+          url:              `${window.location.origin}/login?verified=true`,
+          handleCodeInApp:  false,
         });
       }
 
@@ -253,13 +254,30 @@ export default function Register() {
     const user = auth.currentUser;
     if (!user) { toast.error("Session expired. Please log in.", errStyle); return; }
     try {
-      await sendEmailVerification(user, {
-        url: `${window.location.origin}/login?verified=true`,
-        handleCodeInApp: false,
+      // Try branded email first
+      const res = await fetch("/api/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid:         user.uid,
+          email:       user.email,
+          displayName: user.displayName || "",
+          continueUrl: `${window.location.origin}/login?verified=true`,
+        }),
       });
+      if (!res.ok) throw new Error("API route failed");
       toast.success("Verification email resent!", okStyle);
     } catch {
-      toast.error("Failed to resend. Please try again.", errStyle);
+      // Fallback to Firebase default
+      try {
+        await sendEmailVerification(user, {
+          url: `${window.location.origin}/login?verified=true`,
+          handleCodeInApp: false,
+        });
+        toast.success("Verification email resent!", okStyle);
+      } catch {
+        toast.error("Failed to resend. Please try again in a few minutes.", errStyle);
+      }
     }
   };
 
@@ -332,11 +350,15 @@ export default function Register() {
 
       <div className="flex flex-col lg:flex-row min-h-screen w-full">
 
-        <aside className="lg:w-5/12 bg-[#0c4a6e] text-white md:flex relative overflow-hidden hidden flex-col justify-between p-8 lg:p-12">
+        {/* ── Left Panel ── */}
+        <aside className="lg:w-5/12 bg-[#0c4a6e] text-white relative overflow-hidden flex flex-col justify-between p-8 lg:p-12">
           <div className="absolute inset-0 bg-gradient-to-b from-[#0c4a6e]/90 to-[#075985]/90" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-12">
-            
+              <div className="bg-[#10b981] p-2 rounded-lg">
+                <Hammer className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold tracking-tight">SkillBridge</span>
             </div>
             <div className="hidden lg:block space-y-8">
               <h2 className="text-4xl font-bold leading-tight">
@@ -375,11 +397,15 @@ export default function Register() {
         </aside>
 
         {/* ── Right Panel ── */}
-        <main className="lg:w-7/12 bg-white flex flex-col justify-center p-6 sm:p-12 overflow-y-auto">
+        <main className="lg:w-7/12 bg-white flex flex-col justify-center p-6 sm:p-12 lg:p-16 overflow-y-auto">
           <div className="max-w-xl mx-auto w-full">
 
             <div className="mb-8 text-center lg:text-left">
-                <Image className="cursor-pointer mb-10 mx-auto" src={Logo} alt="logo" width={200} />
+              {/* Mobile logo */}
+              <div className="flex items-center justify-center gap-2 mb-6 lg:hidden">
+                <div className="bg-[#10b981] p-2 rounded-lg"><Hammer className="w-5 h-5 text-white" /></div>
+                <span className="text-xl font-bold text-[#0c4a6e]">SkillBridge</span>
+              </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h1>
               <p className="text-gray-500">Start connecting with opportunities today.</p>
             </div>

@@ -21,6 +21,7 @@ const NAV = [
   { label: "Payments",    href: "/admin/payments",    icon: CreditCard,  badge: "payments" },
   { label: "Disputes",    href: "/admin/disputes",    icon: ShieldAlert, badge: "disputes" },
   { label: "Withdrawals", href: "/admin/withdrawals", icon: Wallet },
+  { label: "Annoucements", href: "/admin/send-announcement", icon: Wallet },
   { label: "Settings",    href: "/admin/settings",    icon: Settings },
 ];
 

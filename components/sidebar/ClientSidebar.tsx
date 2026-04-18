@@ -17,7 +17,6 @@ export default function ClientSidebar() {
     { name: "My Bookings",    href: "/client/bookings",    icon: "fa-solid fa-calendar-check" },
     { name: "Messages",       href: "/client/messages",    icon: "fa-solid fa-message" },
     { name: "Payments",       href: "/client/payments",    icon: "fa-solid fa-credit-card" },
-    { name: "Saved Workers",  href: "/client/saved",       icon: "fa-solid fa-bookmark" },
     { name: "Disputes",       href: "/client/disputes",    icon: "fa-solid fa-scale-balanced" },
     { name: "Notifications",  href: "/client/notifications", icon: "fa-solid fa-bell" },
     { name: "Settings",       href: "/client/settings",    icon: "fa-solid fa-gear" },
