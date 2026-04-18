@@ -126,6 +126,7 @@ export default function EarningsPage() {
   const [showWithdraw,  setShowWithdraw]  = useState(false);
   const [txs,           setTxs]           = useState<Tx[]>([]);
   const [loading,       setLoading]       = useState(true);
+  const [workerName, setWorkerName] = useState("");
   const [wallet, setWallet] = useState({ balance: 0, escrow: 0, earned: 0, withdrawn: 0 });
 
   useEffect(() => {
@@ -137,6 +138,7 @@ export default function EarningsPage() {
       const unsubUser = onDocSnapshot(userRef, snap => {
         if (snap.exists()) {
           const d = snap.data();
+          setWorkerName(d.displayName || d.fullName || user.displayName || "");
           setWallet({
             balance:   d.walletBalance   || 0,
             escrow:    d.escrowBalance   || 0,
