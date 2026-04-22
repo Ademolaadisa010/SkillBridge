@@ -42,12 +42,9 @@ function buildAnnouncementHTML(name: string, subject: string, body: string): str
 
         <!-- Header -->
         <tr>
-          <td style="background:linear-gradient(135deg,#0c4a6e 0%,#075985 100%);padding:32px 40px;text-align:center;">
+          <td style="background:linear-gradient(135deg,#FFF 0%,#FFF 100%);border-bottom: 2px solid #0c4a6e; padding:32px 40px;text-align:center;">
             <div style="display:inline-flex;align-items:center;gap:10px;">
-              <div style="background:#10b981;width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
-                <span style="color:white;font-size:18px;font-weight:bold;">S</span>
-              </div>
-              <span style="color:white;font-size:22px;font-weight:bold;letter-spacing:-0.5px;">SkillBridge</span>
+              <img src="https://skillbridge.vercel.app/logo.jpg" width="200" alt="SkillBridge Logo" />
             </div>
           </td>
         </tr>
@@ -73,7 +70,7 @@ function buildAnnouncementHTML(name: string, subject: string, body: string): str
 
             <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.6;">
               You're receiving this because you have a SkillBridge account.<br/>
-              Questions? Reply to <a href="mailto:support@skillbridge.ng" style="color:#0284c7;text-decoration:none;">support@skillbridge.ng</a>
+              Questions? Reply to <a href="mailto:skillbridgenigeria@gmail.com" style="color:#0284c7;text-decoration:none;">support@skillbridge</a>
             </p>
           </td>
         </tr>
