@@ -9,6 +9,8 @@ import {
   Star, BadgeCheck, MessageCircle, ShieldAlert,
   Bell, Settings, HelpCircle, LogOut
 } from "lucide-react";
+import Image from "next/image";
+import Logo from "@/public/logo.jpg"
 
 const navItems = [
   { name: "Dashboard",      href: "/worker/dashboard",      icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -17,7 +19,7 @@ const navItems = [
   { name: "Earnings",       href: "/worker/earnings",       icon: <Wallet className="w-4 h-4" /> },
   { name: "Messages",       href: "/worker/messages",       icon: <MessageCircle className="w-4 h-4" /> },
   // { name: "Reviews",        href: "/worker/reviews",        icon: <Star className="w-4 h-4" /> },
-  { name: "Verification",   href: "/worker/verification",   icon: <BadgeCheck className="w-4 h-4" /> },
+  // { name: "Verification",   href: "/worker/verification",   icon: <BadgeCheck className="w-4 h-4" /> },
   { name: "Disputes",       href: "/worker/disputes",       icon: <ShieldAlert className="w-4 h-4" /> },
   { name: "Notifications",  href: "/worker/notifications",  icon: <Bell className="w-4 h-4" /> },
   { name: "Settings",       href: "/worker/settings",       icon: <Settings className="w-4 h-4" /> },
@@ -42,10 +44,7 @@ export default function WorkerSidebar() {
 
       {/* Logo */}
       <div className="flex items-center gap-2 px-6 py-6 border-b border-gray-100">
-        <div className="w-9 h-9 bg-[#10b981] rounded-lg flex items-center justify-center shadow-sm shrink-0">
-          <i className="fas fa-handshake text-white text-base"></i>
-        </div>
-        <span className="text-lg font-bold text-[#0c4a6e] tracking-tight">SkillBridge</span>
+        <Image src={Logo} alt="logo" width={150} />
       </div>
 
       {/* Label */}

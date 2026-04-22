@@ -98,18 +98,22 @@ const topWorkers = [
 const testimonials = [
   {
     quote: "Found an amazing electrician through SkillBridge. Professional, punctual, and excellent work. The escrow payment gave me full confidence.",
-    name: "Aisha Mohammed",
+    name: "Mohammed Usman",
     role: "Homeowner, Abuja",
+    image: "/hero.jpg"
   },
   {
     quote: "As a carpenter, SkillBridge transformed my business. Consistent work, fair rates, and the verification builds real trust with clients.",
     name: "Kofi Asante",
     role: "Carpenter, Lagos",
+    image: "/hero-sec.jpg"
   },
+
   {
     quote: "The chat system and secure booking are so convenient. Discussed my plumbing issue, got a quote, and scheduled everything in minutes.",
-    name: "Fatima Diallo",
+    name: "Gentle",
     role: "Business Owner, Lagos",
+    image: "/test.jpg"
   },
 ];
 
@@ -118,7 +122,6 @@ export default function LandingPage() {
   return (
     <div className="font-sans bg-white text-gray-900 antialiased overflow-x-hidden">
 
-      {/* ── Navbar ── */}
       <motion.nav
         className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm"
         initial={{ y: -60, opacity: 0 }}
@@ -157,9 +160,9 @@ export default function LandingPage() {
             </div>
 
             {/* Mobile Hamburger */}
-            <button className="md:hidden text-[#0c4a6e]">
-              <i className="fas fa-bars text-xl"></i>
-            </button>
+            <Link href="/login"className="bg-[#0284c7] md:hidden text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-[#0369a1] transition shadow-md">
+              Login
+            </Link>
           </div>
         </div>
       </motion.nav>
@@ -188,12 +191,12 @@ export default function LandingPage() {
               </motion.div>
 
               <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-5">
-                Trusted Skilled Workers,{" "}
-                <span className="text-[#34d399]">One Click Away.</span>
+                Find Trusted Skilled Workers Near You — {" "}
+                <span className="text-[#34d399]">Fast.</span>
               </motion.h1>
 
               <motion.p variants={fadeUp} className="text-blue-100 text-lg sm:text-xl mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Secure payments. Verified artisans. Dispute protection. Get any job done by a professional you can trust.
+                From home repairs to technical services, connect with reliable professionals in your area and get any job done quickly and without stress.
               </motion.p>
 
               <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -215,7 +218,7 @@ export default function LandingPage() {
               <motion.div variants={fadeUp} className="flex items-center justify-center lg:justify-start gap-8 mt-10">
                 {[
                   { value: "50+", label: "Skilled Workers" },
-                  { value: "10K+", label: "Jobs Completed" },
+                  { value: "10+", label: "Jobs Completed" },
                   { value: "4.8★", label: "Avg. Rating" },
                 ].map((stat, i) => (
                   <div key={i} className="text-center">
@@ -415,8 +418,9 @@ export default function LandingPage() {
       </section>
 
       {/* ── Top Rated Workers ── */}
-      <section className="py-16 sm:py-24 bg-gray-50">
+      <section className="py-16 sm:py-24 bg-gradient-to-b from-[#f0f9ff] to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
           <motion.div
             className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-4"
             variants={fadeUp}
@@ -425,12 +429,22 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <div>
-              <span className="inline-block bg-[#e0f2fe] text-[#0284c7] text-xs font-bold px-4 py-1.5 rounded-full mb-3 uppercase tracking-wider">Top Rated</span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#0c4a6e]">Meet Our Best Workers</h2>
-              <p className="text-gray-500 mt-2">Verified professionals with excellent track records</p>
+              <span className="inline-block bg-[#e0f2fe] text-[#0284c7] text-xs font-bold px-4 py-1.5 rounded-full mb-3 uppercase tracking-wider">
+                Top Rated
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-[#0c4a6e]">
+                Trusted Skilled Workers
+              </h2>
+              <p className="text-gray-500 mt-2">
+                Reliable professionals ready to help you get any job done.
+              </p>
             </div>
-            <Link href="/login" className="text-[#0284c7] font-semibold hover:text-[#0369a1] flex items-center gap-1 text-sm shrink-0">
-              View All Workers <ChevronRight className="w-4 h-4" />
+
+            <Link
+              href="/login"
+              className="text-[#0284c7] font-semibold hover:text-[#0369a1] flex items-center gap-1 text-sm shrink-0"
+            >
+              View All <ChevronRight className="w-4 h-4" />
             </Link>
           </motion.div>
 
@@ -445,34 +459,47 @@ export default function LandingPage() {
               <motion.div
                 key={i}
                 variants={scaleIn}
-                className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition group"
+                className="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-lg transition group"
               >
-                <div className="relative h-44">
-                  <Image src={Hero} alt={worker.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute top-3 right-3 bg-white px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md">
+                {/* Gradient Avatar */}
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0284c7] to-[#38bdf8] flex items-center justify-center text-white font-bold text-lg mb-4">
+                  {worker.name.charAt(0)}
+                </div>
+
+                {/* Name */}
+                <h3 className="font-bold text-[#0c4a6e] text-base mb-1">
+                  {worker.name}
+                </h3>
+
+                {/* Role */}
+                <p className="text-sm text-gray-500 mb-2">
+                  {worker.role}
+                </p>
+
+                {/* Location */}
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
+                  <MapPin className="w-3 h-3" /> {worker.location}
+                </div>
+
+                {/* Rating + Verified */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-1 text-xs font-medium text-gray-600">
                     <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                    <span className="text-xs font-bold text-gray-700">{worker.rating}</span>
+                    {worker.rating}
                   </div>
-                  <div className="absolute top-3 left-3 bg-[#10b981] text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+
+                  <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
                     <CheckCircle className="w-3 h-3" /> Verified
-                  </div>
+                  </span>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-[#0c4a6e] text-base mb-0.5">{worker.name}</h3>
-                  <p className="text-sm text-gray-500 mb-2">{worker.role}</p>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
-                    <MapPin className="w-3 h-3" /> {worker.location}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#0284c7] font-bold text-sm">{worker.rate}/hr</span>
-                    <Link
-                      href="/login"
-                      className="bg-[#0284c7] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#0369a1] transition"
-                    >
-                      Book Now
-                    </Link>
-                  </div>
-                </div>
+
+                {/* CTA */}
+                <Link
+                  href="/login"
+                  className="block text-center bg-[#0284c7] text-white text-sm font-semibold py-2 rounded-lg hover:bg-[#0369a1] transition"
+                >
+                  Contact
+                </Link>
               </motion.div>
             ))}
           </motion.div>
@@ -605,7 +632,13 @@ export default function LandingPage() {
                 </div>
                 <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">"{t.quote}"</p>
                 <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                  <Image src={Hero} alt={t.name} className="w-10 h-10 rounded-full object-cover" />
+                 <Image
+                    src={t.image}
+                    alt={t.name}
+                    width={40}
+                    height={10}
+                    className="rounded-full object-cover"
+                  />
                   <div>
                     <div className="text-sm font-bold text-[#0c4a6e]">{t.name}</div>
                     <div className="text-xs text-gray-400">{t.role}</div>
