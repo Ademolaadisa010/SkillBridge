@@ -21,7 +21,6 @@ import {
 import ClientSidebar from "@/components/sidebar/ClientSidebar";
 import toast, { Toaster } from "react-hot-toast";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
 interface UserProfile {
   displayName: string;
   email: string;

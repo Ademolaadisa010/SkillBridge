@@ -695,7 +695,7 @@ export default function LandingPage() {
                 {["facebook-f", "twitter", "instagram", "linkedin-in"].map((s) => (
                   <a
                     key={s}
-                    href="#"
+                    href="https://www.facebook.com/skillbridgenigeria"
                     className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-[#10b981] transition text-sm"
                   >
                     <i className={`fab fa-${s}`}></i>
