@@ -40,10 +40,9 @@ function buildEmailHTML(name: string, verifyLink: string): string {
         <tr>
           <td style="background:linear-gradient(135deg,#0c4a6e 0%,#075985 100%);padding:32px 40px;text-align:center;">
             <div style="display:inline-flex;align-items:center;gap:10px;">
-              <div style="background:#10b981;width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;">
-                <span style="color:white;font-size:18px;font-weight:bold;">S</span>
-              </div>
-              <span style="color:white;font-size:22px;font-weight:bold;letter-spacing:-0.5px;">SkillBridge</span>
+              <div style="display:inline-flex;align-items:center;gap:10px;">
+              <img src="https://skillbridge.vercel.app/logo.jpg" width="200" alt="SkillBridge Logo" />
+            </div>
             </div>
           </td>
         </tr>
