@@ -42,7 +42,7 @@ function buildPasswordResetHTML(name: string, resetLink: string): string {
           <td style="background:linear-gradient(135deg,#0c4a6e 0%,#075985 100%);padding:32px 40px;text-align:center;">
             <div style="display:inline-flex;align-items:center;gap:10px;">
               <div style="display:inline-flex;align-items:center;gap:10px;">
-              <img src="https://skillbridge.vercel.app/logo.jpg" width="200" alt="SkillBridge Logo" />
+              <img src="https://skill-bridge-liard-nine.vercel.app//logo.jpg" width="200" alt="SkillBridge Logo" />
             </div>
             </div>
           </td>
