@@ -42,7 +42,7 @@ function buildAnnouncementHTML(name: string, subject: string, body: string): str
 
         <!-- Header -->
         <tr>
-          <td style="background:linear-gradient(135deg,#FFF 0%,#FFF 100%);border-bottom: 2px solid #0c4a6e; padding:32px 40px;text-align:center;">
+          <td style="background:#FFFFFF;border-bottom: 2px solid #0c4a6e; padding:32px 40px;text-align:center;">
             <div style="display:inline-flex;align-items:center;gap:10px;">
               <img src="https://skill-bridge-liard-nine.vercel.app//logo.jpg" width="200" alt="SkillBridge Logo" />
             </div>
